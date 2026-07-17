@@ -10,8 +10,13 @@ class Song {
   final String? albumCover;
   final Duration? duration;
   final String? lyricId;
+
   /// 音源 ID，用于关联到对应的 MusicSource
   final String? sourceId;
+
+  /// 脚本内的源 key（如 kw/kg/tx/wy/mg 等）
+  /// 由源脚本在搜索结果中提供，用于区分同一脚本的不同平台
+  final String? sourceKey;
 
   const Song({
     required this.id,
@@ -23,6 +28,7 @@ class Song {
     this.duration,
     this.lyricId,
     this.sourceId,
+    this.sourceKey,
   });
 
   /// 跨平台去重 key：同名同歌手视为同一首歌
@@ -42,6 +48,7 @@ class Song {
     Duration? duration,
     String? lyricId,
     String? sourceId,
+    String? sourceKey,
   }) {
     return Song(
       id: id ?? this.id,
@@ -53,6 +60,7 @@ class Song {
       duration: duration ?? this.duration,
       lyricId: lyricId ?? this.lyricId,
       sourceId: sourceId ?? this.sourceId,
+      sourceKey: sourceKey ?? this.sourceKey,
     );
   }
 
@@ -66,6 +74,7 @@ class Song {
     'duration': duration?.inMilliseconds,
     'lyricId': lyricId,
     'sourceId': sourceId,
+    'sourceKey': sourceKey,
   };
 
   factory Song.fromMap(Map<String, dynamic> m) => Song(
@@ -80,6 +89,7 @@ class Song {
         : null,
     lyricId: m['lyricId'] as String?,
     sourceId: m['sourceId'] as String?,
+    sourceKey: m['sourceKey'] as String?,
   );
 
   @override

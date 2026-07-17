@@ -1,7 +1,7 @@
 /// 音源类型枚举
 enum SourceType {
   local('本地文件', 'local'),
-  api('在线音源', 'api');
+  online('在线音源', 'online');
 
   final String label;
   final String key;

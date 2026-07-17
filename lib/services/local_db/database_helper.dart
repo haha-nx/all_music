@@ -6,12 +6,9 @@ import '../../models/playlist.dart';
 import '../../models/source_type.dart';
 
 /// SQLite 数据库助手 — 单例，管理所有本地数据持久化
-///
-/// 替换原来的 SharedPreferences + JSON 方案，
-/// 解决 1MB 单 key 限制，支持大量歌曲/歌单数据。
 class DatabaseHelper {
   static const _dbName = 'all_music.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 4;
 
   DatabaseHelper._();
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -22,6 +19,8 @@ class DatabaseHelper {
   Future<Database> get database async {
     if (_db != null) return _db!;
     _db = await _initDatabase();
+    // 运行时安全检查：确保旧 schema 列已被移除
+    await _ensureSchemaClean(_db!);
     return _db!;
   }
 
@@ -37,6 +36,40 @@ class DatabaseHelper {
     );
   }
 
+  /// 运行时 schema 安全检查 — 如果旧列（api_url/source_type/token）仍存在，重建表
+  /// 这确保即使 onUpgrade 因缓存/热重启没触发，schema 也能被修复
+  Future<void> _ensureSchemaClean(Database db) async {
+    final hasApiUrl = await _columnExists(db, 'music_sources', 'api_url');
+    if (!hasApiUrl) return; // schema 已经干净，无需处理
+
+    // ignore: avoid_print
+    print('[DatabaseHelper] 发现旧 schema 列 api_url，重建 music_sources 表');
+    await db.execute('''
+      CREATE TABLE music_sources_v4 (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        script_url TEXT,
+        script_source TEXT NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        sources_json TEXT,
+        version TEXT,
+        author TEXT,
+        description TEXT
+      )
+    ''');
+    await db.execute('''
+      INSERT INTO music_sources_v4 (id, name, script_url, script_source, enabled, created_at, sources_json, version, author, description)
+      SELECT id, name, script_url, script_source, enabled, created_at, sources_json, version, author, description
+      FROM music_sources
+      WHERE script_source IS NOT NULL AND script_source != ''
+    ''');
+    await db.execute('DROP TABLE music_sources');
+    await db.execute('ALTER TABLE music_sources_v4 RENAME TO music_sources');
+    // ignore: avoid_print
+    print('[DatabaseHelper] music_sources 表重建完成');
+  }
+
   /// 检查表中是否已存在某列
   Future<bool> _columnExists(
     DatabaseExecutor db,
@@ -49,8 +82,7 @@ class DatabaseHelper {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // v2: 添加 source_type 和 script_source 列（JS 源脚本支持）
-      // 幂等检查：开发期间数据库可能已包含这些列（如从 v2 onCreate 创建后版本回退）
+      // v2: 添加 source_type 和 script_source 列
       if (!await _columnExists(db, 'music_sources', 'source_type')) {
         await db.execute(
           "ALTER TABLE music_sources ADD COLUMN source_type TEXT DEFAULT 'api'",
@@ -62,24 +94,87 @@ class DatabaseHelper {
         );
       }
     }
+    if (oldVersion < 3) {
+      // v3: 添加源能力字段（如果从 v1 直接升级到 v4，这段仍需执行）
+      // 但对于从 v3 升级到 v4 的情况，下面 v4 迁移会重建表
+      if (!await _columnExists(db, 'music_sources', 'sources_json')) {
+        await db.execute(
+          'ALTER TABLE music_sources ADD COLUMN sources_json TEXT',
+        );
+      }
+      if (!await _columnExists(db, 'music_sources', 'version')) {
+        await db.execute('ALTER TABLE music_sources ADD COLUMN version TEXT');
+      }
+      if (!await _columnExists(db, 'music_sources', 'author')) {
+        await db.execute('ALTER TABLE music_sources ADD COLUMN author TEXT');
+      }
+      if (!await _columnExists(db, 'music_sources', 'description')) {
+        await db.execute(
+          'ALTER TABLE music_sources ADD COLUMN description TEXT',
+        );
+      }
+      if (!await _columnExists(db, 'music_sources', 'script_url')) {
+        await db.execute(
+          'ALTER TABLE music_sources ADD COLUMN script_url TEXT',
+        );
+      }
+      if (!await _columnExists(db, 'songs', 'source_key_extra')) {
+        await db.execute('ALTER TABLE songs ADD COLUMN source_key_extra TEXT');
+      }
+    }
+    if (oldVersion < 4) {
+      // v4: 重建 music_sources 表 — 去掉 api_url NOT NULL 约束
+      // v3 的 ALTER TABLE 方式只添加了新列，没处理旧列的 NOT NULL 约束
+      // 用重建表法：创建新结构 → 复制数据 → 删除旧表 → 重命名
+      final hasApiUrl = await _columnExists(db, 'music_sources', 'api_url');
+      if (hasApiUrl) {
+        await db.execute('''
+          CREATE TABLE music_sources_v4 (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            script_url TEXT,
+            script_source TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            sources_json TEXT,
+            version TEXT,
+            author TEXT,
+            description TEXT
+          )
+        ''');
+        // 只保留有 script_source 的脚本源，丢弃旧 REST API 源
+        await db.execute('''
+          INSERT INTO music_sources_v4 (id, name, script_url, script_source, enabled, created_at, sources_json, version, author, description)
+          SELECT id, name, script_url, script_source, enabled, created_at, sources_json, version, author, description
+          FROM music_sources
+          WHERE script_source IS NOT NULL AND script_source != ''
+        ''');
+        await db.execute('DROP TABLE music_sources');
+        await db.execute(
+          'ALTER TABLE music_sources_v4 RENAME TO music_sources',
+        );
+      }
+    }
   }
 
   Future<void> _createTables(Database db, int version) async {
-    // 音源表
+    // 音源表（v3：只支持脚本源）
     await db.execute('''
       CREATE TABLE music_sources (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
-        api_url TEXT NOT NULL,
-        token TEXT,
+        script_url TEXT,
+        script_source TEXT NOT NULL,
         enabled INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL,
-        source_type TEXT NOT NULL DEFAULT 'api',
-        script_source TEXT
+        sources_json TEXT,
+        version TEXT,
+        author TEXT,
+        description TEXT
       )
     ''');
 
-    // 歌曲表（独立存储，供收藏/最近播放/歌单引用）
+    // 歌曲表
     await db.execute('''
       CREATE TABLE songs (
         id TEXT NOT NULL,
@@ -91,6 +186,7 @@ class DatabaseHelper {
         duration_ms INTEGER,
         lyric_id TEXT,
         source_id TEXT,
+        source_key_extra TEXT,
         PRIMARY KEY (id, source_key)
       )
     ''');
@@ -156,6 +252,7 @@ class DatabaseHelper {
         : null,
     lyricId: row['lyric_id'] as String?,
     sourceId: row['source_id'] as String?,
+    sourceKey: row['source_key_extra'] as String?,
   );
 
   Map<String, dynamic> _songToRow(Song s) => {
@@ -168,6 +265,7 @@ class DatabaseHelper {
     'duration_ms': s.duration?.inMilliseconds,
     'lyric_id': s.lyricId,
     'source_id': s.sourceId,
+    'source_key_extra': s.sourceKey,
   };
 
   /// 保存歌曲（upsert），接受 Database 或 Transaction
@@ -186,28 +284,7 @@ class DatabaseHelper {
   Future<List<MusicSource>> loadSources() async {
     final db = await database;
     final rows = await db.query('music_sources', orderBy: 'created_at ASC');
-    return rows
-        .map(
-          (r) => MusicSource(
-            id: r['id'] as String,
-            name: r['name'] as String,
-            apiUrl: r['api_url'] as String,
-            token: r['token'] as String?,
-            enabled: (r['enabled'] as int) == 1,
-            createdAt: DateTime.parse(r['created_at'] as String),
-            sourceType: _parseSourceType(r['source_type'] as String?),
-            scriptSource: r['script_source'] as String?,
-          ),
-        )
-        .toList();
-  }
-
-  MusicSourceType _parseSourceType(String? type) {
-    if (type == null) return MusicSourceType.api;
-    return MusicSourceType.values.firstWhere(
-      (t) => t.name == type,
-      orElse: () => MusicSourceType.api,
-    );
+    return rows.map((r) => MusicSource.fromMap(r)).toList();
   }
 
   Future<void> saveSources(List<MusicSource> sources) async {
@@ -215,16 +292,7 @@ class DatabaseHelper {
     await db.transaction((txn) async {
       await txn.delete('music_sources');
       for (final s in sources) {
-        await txn.insert('music_sources', {
-          'id': s.id,
-          'name': s.name,
-          'api_url': s.apiUrl,
-          'token': s.token,
-          'enabled': s.enabled ? 1 : 0,
-          'created_at': s.createdAt.toIso8601String(),
-          'source_type': s.sourceType.name,
-          'script_source': s.scriptSource,
-        });
+        await txn.insert('music_sources', s.toMap());
       }
     });
   }
@@ -300,19 +368,16 @@ class DatabaseHelper {
     await _upsertSong(db, song);
 
     await db.transaction((txn) async {
-      // 先删除旧记录（避免重复）
       await txn.delete(
         'recently_played',
         where: 'song_id = ? AND source_key = ?',
         whereArgs: [song.id, song.source.key],
       );
-      // 插入新记录
       await txn.insert('recently_played', {
         'song_id': song.id,
         'source_key': song.source.key,
         'played_at': DateTime.now().toIso8601String(),
       });
-      // 限制最多 50 条
       final count =
           Sqflite.firstIntValue(
             await txn.rawQuery('SELECT COUNT(*) FROM recently_played'),
@@ -385,7 +450,6 @@ class DatabaseHelper {
   Future<void> savePlaylists(List<Playlist> playlists) async {
     final db = await database;
     await db.transaction((txn) async {
-      // 全量替换（简单但可靠）
       await txn.delete('playlist_songs');
       await txn.delete('playlists');
 

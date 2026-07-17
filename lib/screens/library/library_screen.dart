@@ -290,7 +290,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final currentSong = ref.watch(playerProvider.select((s) => s.currentSong));
 
     return SizedBox(
-      height: 180,
+      height: 190,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),

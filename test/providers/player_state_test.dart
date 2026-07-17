@@ -45,7 +45,7 @@ void main() {
         id: 'test',
         name: 'Test',
         artist: 'Tester',
-        source: SourceType.api,
+        source: SourceType.online,
       );
       final state = PlayerState(currentSong: song);
       expect(state.currentSong, isNotNull);

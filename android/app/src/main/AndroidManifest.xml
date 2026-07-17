@@ -41,6 +41,8 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Flutter 3.44+: EnableImpeller 已弃用，Impeller 为默认且唯一的渲染引擎 -->
+
         <!-- audio_service 后台播放服务 -->
         <service android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"

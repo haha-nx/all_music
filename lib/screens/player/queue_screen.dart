@@ -166,7 +166,9 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                 tintColor: isCurrent
                                     ? AppColors.primary.withValues(alpha: 0.1)
                                     : AppColors.surfaceLight,
-                                child: ListTile(
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: ListTile(
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                                   leading: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -210,6 +212,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                           ref.read(playerProvider.notifier).play(song, queue: queue);
                                         },
                                 ),
+                              ),
                               ),
                             ),
                           );

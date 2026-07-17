@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:all_music/screens/library/library_screen.dart';
 import 'package:all_music/providers/favorites_provider.dart';
 import 'package:all_music/providers/source_provider.dart';
@@ -13,7 +14,7 @@ Widget _testableWidget(Widget child, {
   return ProviderScope(
     overrides: [
       favoritesProvider.overrideWith((ref) => FavoritesNotifier()..state = const FavoritesState()),
-      sourceProvider.overrideWith((ref) => SourceNotifier()..state = []),
+      sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = []),
       playlistProvider.overrideWith((ref) => PlaylistNotifier()..state = []),
       ...extraOverrides,
     ],

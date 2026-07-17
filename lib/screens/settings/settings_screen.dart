@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/source_provider.dart';
-import '../../providers/favorites_provider.dart';
+import '../../models/music_source.dart';
 
 /// 设置页 — 音源管理 + 关于
 class SettingsScreen extends ConsumerWidget {
@@ -13,7 +14,6 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sources = ref.watch(sourceProvider);
-    final favorites = ref.watch(favoritesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -62,7 +62,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        // 音源管理
+        // 音源中心（新版）
         SliverToBoxAdapter(
           child: _buildSectionTitle('音源管理'),
         ),
@@ -76,9 +76,25 @@ class SettingsScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   _buildMenuItem(
+                    icon: Icons.hub_outlined,
+                    title: '音源中心（新版）',
+                    subtitle: '管理音源、导入脚本、测试引擎',
+                    onTap: () {
+                      context.push('/source-hub');
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.science_outlined,
+                    title: '音源测试工具',
+                    subtitle: '验证搜索、播放、歌词功能',
+                    onTap: () {
+                      context.push('/source-test');
+                    },
+                  ),
+                  _buildMenuItem(
                     icon: Icons.source,
-                    title: '已导入音源',
-                    subtitle: '${sources.length} 个音源',
+                    title: '已导入源脚本（旧版）',
+                    subtitle: '${sources.length} 个源（${sources.where((s) => s.enabled).length} 个启用）',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -94,67 +110,101 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        // 收藏与历史
-        SliverToBoxAdapter(
-          child: _buildSectionTitle('数据'),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
-            child: GlassPanel(
-              blur: 12,
-              borderRadius: AppSizes.cardBorderRadius,
-              tintColor: AppColors.surfaceLight,
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    icon: Icons.favorite_rounded,
-                    title: '收藏歌曲',
-                    subtitle: '${favorites.favorites.length} 首',
+        // 已导入的音源列表
+        if (sources.isNotEmpty) ...[
+          SliverToBoxAdapter(
+            child: _buildSectionTitle('已导入音源'),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final source = sources[index];
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSizes.paddingH,
+                    vertical: 4,
                   ),
-                  _buildMenuItem(
-                    icon: Icons.history_rounded,
-                    title: '最近播放',
-                    subtitle: '${favorites.recentlyPlayed.length} 首',
-                    onTap: () {
-                      ref.read(favoritesProvider.notifier).clearRecent();
-                    },
+                  child: GlassPanel(
+                    blur: 8,
+                    borderRadius: 12,
+                    tintColor: source.enabled
+                        ? AppColors.primary.withValues(alpha: 0.05)
+                        : AppColors.surfaceLight,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+                      leading: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: source.enabled
+                              ? AppColors.primary.withValues(alpha: 0.15)
+                              : AppColors.textTertiary.withValues(alpha: 0.1),
+                        ),
+                        child: Icon(
+                          Icons.music_note_rounded,
+                          color: source.enabled ? AppColors.primary : AppColors.textTertiary,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(
+                        source.name,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: source.enabled ? AppColors.textPrimary : AppColors.textTertiary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        source.description ?? (source.enabled ? '已启用' : '已禁用'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                      ),
+                      trailing: Switch(
+                        value: source.enabled,
+                        onChanged: (_) {
+                          ref.read(sourceProvider.notifier).toggleEnabled(source.id);
+                        },
+                        activeThumbColor: AppColors.primary,
+                      ),
+                    ),
                   ),
-                ],
-              ),
+                );
+              },
+              childCount: sources.length,
             ),
           ),
-        ),
-
-        // 关于
-        SliverToBoxAdapter(
-          child: _buildSectionTitle('关于'),
-        ),
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
-            child: GlassPanel(
-              blur: 12,
-              borderRadius: AppSizes.cardBorderRadius,
-              tintColor: AppColors.surfaceLight,
-              child: Column(
-                children: [
-                  _buildMenuItem(
-                    icon: Icons.info_outline_rounded,
-                    title: '版本',
-                    subtitle: '1.0.0',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
+      SliverToBoxAdapter(
+        child: _buildSectionTitle('关于'),
+      ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+          child: GlassPanel(
+            blur: 12,
+            borderRadius: AppSizes.cardBorderRadius,
+            tintColor: AppColors.surfaceLight,
+            child: Column(
+              children: [
+                _buildMenuItem(
+                  icon: Icons.info_outline_rounded,
+                  title: '版本',
+                  subtitle: '2.0.0',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      const SliverToBoxAdapter(child: SizedBox(height: 120)),
+      ],
       ),
     );
   }
+
 
   Widget _buildSectionTitle(String title) {
     return Padding(
@@ -219,6 +269,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
     );
   }
+
 }
 
 /// 音源管理子页面
@@ -239,7 +290,7 @@ class _SourceManagePage extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          '音源管理',
+          '源脚本管理',
           style: TextStyle(color: AppColors.textPrimary),
         ),
         actions: [
@@ -261,7 +312,7 @@ class _SourceManagePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '还没有导入音源',
+                    '还没有导入源脚本',
                     style: TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: 16,
@@ -269,7 +320,7 @@ class _SourceManagePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '点击右上角 + 导入音乐源',
+                    '点击右上角 + 导入 LX Music 源脚本',
                     style: TextStyle(
                       color: AppColors.textTertiary,
                       fontSize: 14,
@@ -303,7 +354,7 @@ class _SourceManagePage extends ConsumerWidget {
                               : AppColors.textTertiary.withValues(alpha: 0.1),
                         ),
                         child: Icon(
-                          Icons.source_rounded,
+                          Icons.code_rounded,
                           color: source.enabled ? AppColors.primary : AppColors.textTertiary,
                           size: 22,
                         ),
@@ -315,15 +366,7 @@ class _SourceManagePage extends ConsumerWidget {
                           color: source.enabled ? AppColors.textPrimary : AppColors.textTertiary,
                         ),
                       ),
-                      subtitle: Text(
-                        source.apiUrl,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
+                      subtitle: _buildSourceSubtitle(source),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -359,16 +402,54 @@ class _SourceManagePage extends ConsumerWidget {
     );
   }
 
+  Widget _buildSourceSubtitle(MusicSource source) {
+    final keys = source.sourceKeys;
+    final versionInfo = source.version != null ? ' v${source.version}' : '';
+
+    if (keys.isNotEmpty) {
+      final sourceNames = keys.map((k) {
+        final src = source.parsedSources?[k] as Map<String, dynamic>?;
+        return src?['name'] as String? ?? k;
+      }).join(', ');
+      return Text(
+        '$sourceNames$versionInfo',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+      );
+    }
+
+    if (source.description != null) {
+      return Text(
+        '${source.description!}$versionInfo',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+      );
+    }
+
+    return Text(
+      '源脚本$versionInfo',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+    );
+  }
+
   void _showImportDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
     final urlController = TextEditingController();
-    var isLoading = false;
-    String? errorMsg;
+    final scriptController = TextEditingController();
+    final dialogState = _DialogState();
+    var importMode = 0; // 0 = URL, 1 = 粘贴
+    Map<String, String?>? scriptMeta;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => Dialog(
+        builder: (ctx, setDialogState) {
+          dialogState._setState = setDialogState;
+
+          return Dialog(
           backgroundColor: Colors.transparent,
           child: GlassPanel(
             blur: 20,
@@ -378,54 +459,233 @@ class _SourceManagePage extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    '导入音源',
+                    '导入源脚本',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '支持 URL 导入或直接粘贴',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
+                  const SizedBox(height: 16),
+
+                  // 模式切换
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceLight.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setDialogState(() { importMode = 0; dialogState.error = null; });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: importMode == 0
+                                    ? AppColors.primary.withValues(alpha: 0.3)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'URL 导入',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: importMode == 0
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setDialogState(() { importMode = 1; dialogState.error = null; });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: importMode == 1
+                                    ? AppColors.primary.withValues(alpha: 0.3)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                '粘贴脚本',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: importMode == 1
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 20),
-                  _GlassInput(
-                    controller: nameController,
-                    hint: '音源名称',
-                  ),
-                  const SizedBox(height: 12),
-                  _GlassInput(
-                    controller: urlController,
-                    hint: '音源地址 (URL)',
-                  ),
-                  // 错误提示
-                  if (errorMsg != null) ...[
-                    const SizedBox(height: 12),
+
+                  // URL 模式
+                  if (importMode == 0) ...[
+                    _GlassInput(
+                      controller: urlController,
+                      hint: '源脚本 URL（.js 文件地址）',
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      errorMsg!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.error,
+                      '支持 LX Music 源脚本 (.js) URL',
+                      style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+
+                  // 粘贴模式
+                  if (importMode == 1) ...[
+                    Container(
+                      height: 160,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceLight.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.textTertiary.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: TextField(
+                        controller: scriptController,
+                        maxLines: null,
+                        expands: true,
+                        textAlignVertical: TextAlignVertical.top,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                          fontFamily: 'monospace',
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '在此粘贴 LX Music 源脚本内容...',
+                          hintStyle: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textTertiary,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.all(12),
+                        ),
+                        onChanged: (_) {
+                          final meta = ref
+                              .read(sourceProvider.notifier)
+                              .parseScriptMeta(scriptController.text);
+                          setDialogState(() { scriptMeta = meta.isNotEmpty ? meta : null; });
+                        },
+                      ),
+                    ),
+
+                    // 从剪贴板读取按钮
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            final data = await Clipboard.getData(Clipboard.kTextPlain);
+                            if (data?.text != null && data!.text!.isNotEmpty) {
+                              scriptController.text = data.text!;
+                              final meta = ref
+                                  .read(sourceProvider.notifier)
+                                  .parseScriptMeta(scriptController.text);
+                              setDialogState(() { scriptMeta = meta.isNotEmpty ? meta : null; });
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.paste_rounded, size: 14,
+                                    color: AppColors.primary),
+                                const SizedBox(width: 4),
+                                Text('从剪贴板读取',
+                                    style: TextStyle(fontSize: 12,
+                                        color: AppColors.primary)),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    // 脚本元信息展示
+                    if (scriptMeta != null && scriptMeta!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('检测到脚本信息',
+                                style: TextStyle(fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary)),
+                            const SizedBox(height: 6),
+                            if (scriptMeta!['name'] != null)
+                              _metaRow('名称', scriptMeta!['name']!),
+                            if (scriptMeta!['version'] != null)
+                              _metaRow('版本', scriptMeta!['version']!),
+                            if (scriptMeta!['author'] != null)
+                              _metaRow('作者', scriptMeta!['author']!),
+                            if (scriptMeta!['description'] != null)
+                              _metaRow('描述', scriptMeta!['description']!),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+
+                  // 错误提示
+                  if (dialogState.error != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        dialogState.error!,
+                        style: TextStyle(fontSize: 12, color: AppColors.error),
                       ),
                     ),
                   ],
+
                   const SizedBox(height: 24),
+
+                  // 按钮
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       TextButton(
-                        onPressed: isLoading ? null : () => Navigator.pop(ctx),
-                        child: Text(
-                          '取消',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
+                        onPressed: dialogState.loading ? null : () => Navigator.pop(ctx),
+                        child: Text('取消',
+                            style: TextStyle(color: AppColors.textSecondary)),
                       ),
                       const SizedBox(width: 12),
                       GlassPanel(
@@ -433,51 +693,24 @@ class _SourceManagePage extends ConsumerWidget {
                         borderRadius: 12,
                         tintColor: AppColors.primary.withValues(alpha: 0.3),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 10),
                           child: GestureDetector(
-                            onTap: isLoading
+                            onTap: dialogState.loading
                                 ? null
-                                : () async {
-                              final name = nameController.text.trim();
-                              final url = urlController.text.trim();
-                              if (name.isEmpty || url.isEmpty) return;
-
-                              setDialogState(() {
-                                isLoading = true;
-                                errorMsg = null;
-                              });
-
-                              final result = await ref
-                                  .read(sourceProvider.notifier)
-                                  .importFromUrl(name, url);
-
-                              if (!ctx.mounted) return;
-
-                              if (result.success) {
-                                Navigator.pop(ctx);
-                              } else {
-                                setDialogState(() {
-                                  isLoading = false;
-                                  errorMsg = result.error;
-                                });
-                              }
-                            },
-                            child: isLoading
+                                : () => _doImport(ctx, ref, dialogState,
+                                    importMode, urlController,
+                                    scriptController),
+                            child: dialogState.loading
                                 ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
+                                    width: 16, height: 16,
                                     child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text(
-                                    '导入',
+                                        strokeWidth: 2,
+                                        color: Colors.white))
+                                : const Text('导入',
                                     style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600)),
                           ),
                         ),
                       ),
@@ -487,10 +720,107 @@ class _SourceManagePage extends ConsumerWidget {
               ),
             ),
           ),
-        ),
+        ); },
       ),
     );
   }
+
+  Future<void> _doImport(
+    BuildContext ctx,
+    WidgetRef ref,
+    _DialogState dialogState,
+    int importMode,
+    TextEditingController urlController,
+    TextEditingController scriptController,
+  ) async {
+    dialogState._setState!(() {
+      dialogState.loading = true;
+      dialogState.error = null;
+    });
+
+    final notifier = ref.read(sourceProvider.notifier);
+    ImportResult result;
+
+    if (importMode == 1) {
+      final script = scriptController.text.trim();
+      if (script.isEmpty) {
+        dialogState._setState!(() {
+          dialogState.loading = false;
+          dialogState.error = '请先粘贴脚本内容';
+        });
+        return;
+      }
+      result = await notifier.importFromScript(script);
+    } else {
+      final url = urlController.text.trim();
+      if (url.isEmpty) {
+        dialogState._setState!(() {
+          dialogState.loading = false;
+          dialogState.error = '请输入源脚本 URL';
+        });
+        return;
+      }
+      result = await notifier.importFromUrl(url);
+    }
+
+    if (!ctx.mounted) return;
+
+    if (result.success) {
+      Navigator.pop(ctx);
+      // 显示导入成功的源信息
+      final source = result.source;
+      final keys = source?.sourceKeys ?? [];
+      final sourceNames = keys.map((k) {
+        final src = source?.parsedSources?[k] as Map<String, dynamic>?;
+        return src?['name'] as String? ?? k;
+      }).join(', ');
+
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text(keys.isNotEmpty
+              ? '源脚本导入成功：$sourceNames'
+              : '源脚本导入成功'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } else {
+      dialogState._setState!(() {
+        dialogState.loading = false;
+        dialogState.error = result.error;
+      });
+    }
+  }
+
+  Widget _metaRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 36,
+            child: Text('$label:',
+                style: TextStyle(fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: TextStyle(fontSize: 11,
+                    color: AppColors.textPrimary)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 对话框可变状态持有者
+class _DialogState {
+  bool loading = false;
+  String? error;
+  void Function(void Function())? _setState;
 }
 
 /// 玻璃输入框组件

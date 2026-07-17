@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
 import '../models/lyric.dart';
-import '../services/source_api.dart';
+import '../music_source/core/track_adapter.dart';
 import '../services/audio_handler.dart';
 import 'source_provider.dart';
 import 'favorites_provider.dart';
@@ -24,6 +24,8 @@ class PlayerState {
   final List<LyricLine> lyricLines;
   final int currentLyricIndex;
   final bool showLyrics;
+  /// 播放错误消息（非 null 时表示播放失败，应显示给用户）
+  final String? playbackError;
 
   const PlayerState({
     this.currentSong,
@@ -37,6 +39,7 @@ class PlayerState {
     this.lyricLines = const [],
     this.currentLyricIndex = 0,
     this.showLyrics = false,
+    this.playbackError,
   });
 
   PlayerState copyWith({
@@ -51,6 +54,8 @@ class PlayerState {
     List<LyricLine>? lyricLines,
     int? currentLyricIndex,
     bool? showLyrics,
+    String? playbackError,
+    bool clearError = false,
   }) {
     return PlayerState(
       currentSong: currentSong ?? this.currentSong,
@@ -64,6 +69,7 @@ class PlayerState {
       lyricLines: lyricLines ?? this.lyricLines,
       currentLyricIndex: currentLyricIndex ?? this.currentLyricIndex,
       showLyrics: showLyrics ?? this.showLyrics,
+      playbackError: clearError ? null : (playbackError ?? this.playbackError),
     );
   }
 }
@@ -151,14 +157,13 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (song == null) return;
 
     try {
-      final sources = _ref.read(sourceProvider);
-      final source = sources.firstWhere(
-        (s) => s.id == song.sourceId,
-        orElse: () => sources.first,
-      );
-      final api = await SourceApi.create(source, _ref);
-      final lyric = await api.getLyric(song);
-      if (lyric != null && mounted) {
+      final bridge = await _ref.read(sourceProvider.notifier).getEngine(song.sourceId ?? '');
+      if (bridge == null) return;
+
+      final track = TrackAdapter.fromLegacySong(song);
+      final lrc = await bridge.getLyric(track);
+      if (lrc != null && lrc.isNotEmpty && mounted) {
+        final lyric = Lyric.fromLrc(lrc, songId: song.id);
         state = state.copyWith(
           lyricLines: lyric.lines,
           currentLyricIndex: lyric.currentIndex(state.position),
@@ -226,36 +231,56 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   }
 
 
-  /// 播放歌曲
-  Future<void> play(Song song, {List<Song>? queue}) async {
+  /// 播放歌曲（内部方法，返回是否成功）
+  Future<bool> _playSong(Song song, {List<Song>? queue}) async {
     try {
-      // 查找对应的音源获取播放URL
-      if (song.sourceId != null) {
-        final sources = _ref.read(sourceProvider);
-        final source = sources.firstWhere(
-          (s) => s.id == song.sourceId,
-          orElse: () => sources.first,
-        );
-        final api = await SourceApi.create(source, _ref);
-        final url = await api.getSongUrl(song);
-        if (url == null || url.isEmpty) return;
-        await _audioPlayer.setUrl(url);
-      } else {
-        return; // 没有可用音源
+      if (song.sourceId == null) {
+        state = state.copyWith(playbackError: '缺少音源信息，无法播放');
+        return false;
       }
 
-      if (queue != null) {
-        final index = queue.indexWhere((s) => s.dedupeKey == song.dedupeKey);
-        state = state.copyWith(
-          currentSong: song,
-          queue: queue,
-          currentIndex: index >= 0 ? index : 0,
-        );
-        // 队列变更时重新生成随机播放顺序
-        if (state.shuffleMode) _regenerateShuffleOrder();
-      } else {
-        state = state.copyWith(currentSong: song);
+      // ── URL 降级链：按优先级尝试多个源获取播放链接 ──
+      String? url;
+      String? lastError;
+
+      final sourceNotifier = _ref.read(sourceProvider.notifier);
+      final track = TrackAdapter.fromLegacySong(song);
+
+      // 构建尝试顺序：原始源 → 其他已启用源
+      final tryOrder = <String>[];
+      if (song.sourceId != null) tryOrder.add(song.sourceId!);
+      for (final s in sourceNotifier.enabledSources) {
+        if (!tryOrder.contains(s.id)) tryOrder.add(s.id);
       }
+
+      final triedIds = <String>{};
+      for (final sourceId in tryOrder) {
+        if (!triedIds.add(sourceId)) continue;
+
+        try {
+          final bridge = await sourceNotifier.getEngine(sourceId);
+          if (bridge == null) continue;
+
+          // 如果音源有多个子源key，尝试匹配
+          final result = await bridge.getMusicUrl(track);
+          if (result != null && result.isNotEmpty) {
+            url = result;
+            break;
+          }
+        } catch (e) {
+          lastError = '$sourceId: $e';
+          continue;
+        }
+      }
+
+      if (url == null || url.isEmpty) {
+        state = state.copyWith(
+          playbackError: '「${song.name}」暂无可用播放源${lastError != null ? '（$lastError）' : ''}',
+        );
+        return false;
+      }
+
+      await _audioPlayer.setUrl(url);
 
       // 记录到最近播放
       _ref.read(favoritesProvider.notifier).addToRecent(song);
@@ -264,10 +289,43 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       // 更新锁屏信息
       _updateMediaItem();
       // 歌曲切换后清空并异步获取歌词
-      state = state.copyWith(lyricLines: [], currentLyricIndex: 0);
+      state = state.copyWith(
+        lyricLines: [],
+        currentLyricIndex: 0,
+        clearError: true,
+      );
       fetchLyrics();
+      return true;
     } catch (e) {
-      // 播放失败，静默处理
+      print('[Player] 播放异常: $e');
+      state = state.copyWith(playbackError: '播放失败: $e');
+      return false;
+    }
+  }
+
+  /// 播放歌曲
+  Future<void> play(Song song, {List<Song>? queue}) async {
+    // 先更新队列和当前歌曲信息（即使 URL 获取失败，队列也要正确）
+    if (queue != null) {
+      final index = queue.indexWhere((s) => s.dedupeKey == song.dedupeKey);
+      state = state.copyWith(
+        currentSong: song,
+        queue: queue,
+        currentIndex: index >= 0 ? index : 0,
+        clearError: true,
+      );
+      if (state.shuffleMode) _regenerateShuffleOrder();
+    } else {
+      state = state.copyWith(currentSong: song, clearError: true);
+    }
+
+    final ok = await _playSong(song, queue: queue);
+    if (!ok) {
+      // _playSong 已经设置了 playbackError，此处暂停播放状态
+      try {
+        await _audioPlayer.stop();
+      } catch (_) {}
+      state = state.copyWith(isPlaying: false);
     }
   }
 
@@ -301,37 +359,56 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     _shufflePosition = 0;
   }
 
-  /// 下一首（支持 Fisher-Yates 随机播放）
+  /// 下一首（支持 Fisher-Yates 随机播放，URL 失败自动跳过）
   Future<void> next() async {
     if (state.queue.isEmpty) return;
 
-    int nextIndex;
-    if (state.shuffleMode) {
-      _shufflePosition++;
-      // 已播完一轮
-      if (_shufflePosition >= _shuffleOrder.length) {
-        if (state.repeatMode == MusicRepeatMode.all) {
-          _regenerateShuffleOrder();
-        } else {
-          return; // 不循环，停在最后一首
+    // 最多尝试 queue.length 次，避免全部失败时无限循环
+    for (int attempt = 0; attempt < state.queue.length; attempt++) {
+      int nextIndex;
+      if (state.shuffleMode) {
+        _shufflePosition++;
+        if (_shufflePosition >= _shuffleOrder.length) {
+          if (state.repeatMode == MusicRepeatMode.all) {
+            _regenerateShuffleOrder();
+          } else {
+            return; // 不循环，停在最后一首
+          }
+        }
+        nextIndex = _shuffleOrder[_shufflePosition];
+      } else {
+        nextIndex = state.currentIndex + 1;
+        if (nextIndex >= state.queue.length) {
+          if (state.repeatMode == MusicRepeatMode.all) {
+            nextIndex = 0;
+          } else {
+            return;
+          }
         }
       }
-      nextIndex = _shuffleOrder[_shufflePosition];
-    } else {
-      nextIndex = state.currentIndex + 1;
-      if (nextIndex >= state.queue.length) {
-        if (state.repeatMode == MusicRepeatMode.all) {
-          nextIndex = 0;
-        } else {
-          return;
-        }
-      }
-    }
 
-    await play(state.queue[nextIndex], queue: state.queue);
+      final song = state.queue[nextIndex];
+      // 先更新状态
+      state = state.copyWith(
+        currentSong: song,
+        currentIndex: nextIndex,
+      );
+      // 尝试播放
+      final ok = await _playSong(song, queue: state.queue);
+      if (ok) return; // 播放成功，退出
+      // URL 失败，继续尝试下一首
+      // ignore: avoid_print
+      print('[Player] 跳过 (URL获取失败): ${song.name}');
+    }
+    // ignore: avoid_print
+    print('[Player] 队列中所有歌曲 URL 均获取失败');
+    state = state.copyWith(
+      playbackError: '队列中所有歌曲暂无可用播放源',
+      isPlaying: false,
+    );
   }
 
-  /// 上一首（支持 Fisher-Yates 随机播放）
+  /// 上一首（支持 Fisher-Yates 随机播放，URL 失败自动跳过）
   Future<void> previous() async {
     if (state.queue.isEmpty) return;
 
@@ -341,32 +418,47 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       return;
     }
 
-    int prevIndex;
-    if (state.shuffleMode) {
-      _shufflePosition--;
-      if (_shufflePosition < 0) {
-        if (state.repeatMode == MusicRepeatMode.all) {
-          _shufflePosition = _shuffleOrder.length - 1;
-        } else {
-          _shufflePosition = 0;
+    for (int attempt = 0; attempt < state.queue.length; attempt++) {
+      int prevIndex;
+      if (state.shuffleMode) {
+        _shufflePosition--;
+        if (_shufflePosition < 0) {
+          if (state.repeatMode == MusicRepeatMode.all) {
+            _shufflePosition = _shuffleOrder.length - 1;
+          } else {
+            _shufflePosition = 0;
+            return;
+          }
+        }
+        prevIndex = _shuffleOrder[_shufflePosition];
+      } else {
+        prevIndex = state.currentIndex - 1;
+        if (prevIndex < 0) {
+          if (state.repeatMode == MusicRepeatMode.all) {
+            prevIndex = state.queue.length - 1;
+          } else {
+            prevIndex = 0;
+            return;
+          }
         }
       }
-      prevIndex = _shuffleOrder[_shufflePosition];
-    } else {
-      prevIndex = state.currentIndex - 1;
-      if (prevIndex < 0) {
-        if (state.repeatMode == MusicRepeatMode.all) {
-          prevIndex = state.queue.length - 1;
-        } else {
-          prevIndex = 0;
-        }
-      }
+
+      final song = state.queue[prevIndex];
+      state = state.copyWith(
+        currentSong: song,
+        currentIndex: prevIndex,
+      );
+      final ok = await _playSong(song, queue: state.queue);
+      if (ok) return;
+      // ignore: avoid_print
+      print('[Player] 跳过 (URL获取失败): ${song.name}');
     }
-
-    await play(state.queue[prevIndex], queue: state.queue);
+    // 所有歌曲都失败
+    state = state.copyWith(
+      playbackError: '队列中所有歌曲暂无可用播放源',
+      isPlaying: false,
+    );
   }
-
-  /// 跳转到指定位置
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
   }

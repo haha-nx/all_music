@@ -9,6 +9,8 @@ import 'screens/settings/settings_screen.dart';
 import 'screens/player/player_screen.dart';
 import 'screens/favorites/favorites_screen.dart';
 import 'screens/playlist/playlist_screen.dart';
+import 'music_source/screens/source_hub_screen.dart';
+import 'music_source/screens/source_test_screen.dart';
 import 'widgets/liquid_bottom_bar.dart';
 
 class MusicApp extends StatelessWidget {
@@ -111,6 +113,14 @@ final GoRouter _router = GoRouter(
       path: '/playlist/:id',
       pageBuilder: (_, state) =>
           _SlideRightTransition(child: PlaylistScreen(playlistId: state.pathParameters['id']!)),
+    ),
+    GoRoute(
+      path: '/source-hub',
+      pageBuilder: (_, _) => _SlideRightTransition(child: const SourceHubScreen()),
+    ),
+    GoRoute(
+      path: '/source-test',
+      pageBuilder: (_, _) => _SlideRightTransition(child: const SourceTestScreen()),
     ),
   ],
 );

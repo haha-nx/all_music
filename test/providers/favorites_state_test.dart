@@ -7,7 +7,7 @@ Song _song(String id, String name) => Song(
       id: id,
       name: name,
       artist: 'Test Artist',
-      source: SourceType.api,
+      source: SourceType.online,
     );
 
 void main() {

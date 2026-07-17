@@ -186,7 +186,9 @@ class PlaylistScreen extends ConsumerWidget {
                         blur: 8,
                         borderRadius: 14,
                         tintColor: isPlaying ? AppColors.primary.withValues(alpha: 0.1) : AppColors.surfaceLight,
-                        child: ListTile(
+                        child: Material(
+                          color: Colors.transparent,
+                          child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                           leading: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -226,6 +228,7 @@ class PlaylistScreen extends ConsumerWidget {
                             showSongContextMenu(context, ref, song);
                           },
                         ),
+                      ),
                       ),
                     ),
                   );

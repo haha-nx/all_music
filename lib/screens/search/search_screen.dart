@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,11 +21,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
 
-  Timer? _debounce;
-
   @override
   void dispose() {
-    _debounce?.cancel();
     _searchController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -85,12 +81,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (value) {
-                  _debounce?.cancel();
-                  _debounce = Timer(const Duration(milliseconds: 300), () {
-                    if (value.trim().isNotEmpty) {
-                      ref.read(searchProvider.notifier).search(value.trim());
-                    }
-                  });
+                  ref.read(searchProvider.notifier).searchWithDebounce(value.trim());
                 },
               ),
             ),
@@ -115,6 +106,35 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       Expanded(
                         child: Text(
                           '请先在设置中导入音源',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else if (sources.every((s) => !s.enabled))
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              child: GlassPanel(
+                blur: 10,
+                borderRadius: 14,
+                tintColor: AppColors.error.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '所有音源已禁用，请在设置中启用至少一个音源',
                           style: TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 14,
@@ -174,7 +194,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     tintColor: isPlaying
                         ? AppColors.primary.withValues(alpha: 0.1)
                         : AppColors.surfaceLight,
-                    child: ListTile(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: ListTile(
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       leading: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -224,13 +246,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       onTap: () {
                         ref.read(playerProvider.notifier).playPlaylist(
                           searchState.results,
-                          startIndex: index,
+                          startIndex: songIndex,
                         );
                       },
                       onLongPress: () {
                         HapticFeedback.mediumImpact();
                         showSongContextMenu(context, ref, song);
                       },
+                    ),
                     ),
                   ),
                 );

@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/song.dart';
-import '../providers/source_provider.dart';
-import '../services/source_api.dart';
+import '../music_source/core/track_adapter.dart';
+import '../music_source/services/search_aggregator.dart';
+import 'source_provider.dart';
 
 /// 搜索状态
 class SearchState {
@@ -9,7 +13,6 @@ class SearchState {
   final bool isLoading;
   final String? error;
   final bool hasSearched;
-  /// 搜索失败的音源名称列表
   final List<String> failedSources;
 
   const SearchState({
@@ -37,44 +40,56 @@ class SearchState {
   }
 }
 
-/// 搜索状态管理 — 通过导入的音源搜索
+/// 搜索状态管理（基于新的音乐源模块）
 class SearchNotifier extends StateNotifier<SearchState> {
   final Ref ref;
+  Timer? _debounce;
+  String _lastKeyword = '';
+
   SearchNotifier(this.ref) : super(const SearchState());
+
+  /// 带防抖的搜索
+  void searchWithDebounce(String keyword) {
+    _debounce?.cancel();
+    if (keyword.trim().isEmpty) {
+      clear();
+      return;
+    }
+    if (keyword.trim().length < 2) return;
+
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      search(keyword.trim());
+    });
+  }
 
   /// 跨音源搜索
   Future<void> search(String keyword) async {
+    if (keyword.isEmpty || keyword.length < 2) return;
+    if (_lastKeyword == keyword && !state.isLoading) return;
+    _lastKeyword = keyword;
+
     state = state.copyWith(isLoading: true, error: null, failedSources: []);
 
     try {
-      final sources = ref.read(sourceProvider).where((s) => s.enabled).toList();
-      final allResults = <Song>[];
-      final failed = <String>[];
+      final sourceNotifier = ref.read(sourceProvider.notifier);
+      final bridges = await sourceNotifier.manager.getReadyBridges();
 
-      for (final source in sources) {
-        try {
-          final api = await SourceApi.create(source, ref);
-          final results = await api.search(keyword, limit: 20);
-          allResults.addAll(results);
-        } catch (e) {
-          failed.add(source.name);
-        }
+      if (bridges.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          hasSearched: true,
+          error: '没有可用音源，请在设置中导入并启用音源',
+        );
+        return;
       }
 
-      // 按去重 key 去重，保留第一个出现的
-      final seen = <String>{};
-      final deduped = <Song>[];
-      for (final song in allResults) {
-        if (seen.add(song.dedupeKey)) {
-          deduped.add(song);
-        }
-      }
+      final tracks = await SearchAggregator.search(bridges, keyword, limit: 20);
+      final songs = TrackAdapter.toLegacySongs(tracks);
 
       state = state.copyWith(
-        results: deduped,
+        results: songs,
         isLoading: false,
         hasSearched: true,
-        failedSources: failed,
       );
     } catch (e) {
       state = state.copyWith(
@@ -86,6 +101,8 @@ class SearchNotifier extends StateNotifier<SearchState> {
   }
 
   void clear() {
+    _debounce?.cancel();
+    _lastKeyword = '';
     state = const SearchState();
   }
 }

@@ -23,11 +23,42 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   int _lastHighlightIndex = -1;
   bool _isDraggingSeekBar = false;
   double _dragValue = 0;
+  String? _lastDisplayedError;
 
   @override
   void dispose() {
     _lyricsScrollController.dispose();
     super.dispose();
+  }
+
+  /// 显示播放错误提示
+  void _showPlaybackError(String error) {
+    if (_lastDisplayedError == error) return; // 避免重复显示相同错误
+    _lastDisplayedError = error;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(child: Text(error, style: const TextStyle(fontSize: 14))),
+          ],
+        ),
+        backgroundColor: AppColors.error.withValues(alpha: 0.9),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '知道了',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
   }
 
   /// 自动滚动歌词到当前行
@@ -53,6 +84,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             .isFavorite(playerState.currentSong!)
         : false;
 
+    // 检测播放错误并显示 SnackBar
+    if (playerState.playbackError != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showPlaybackError(playerState.playbackError!);
+      });
+    } else {
+      _lastDisplayedError = null; // 错误清除后允许再次显示
+    }
+
     // 歌词滚动同步
     if (playerState.showLyrics && playerState.lyricLines.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -74,6 +114,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       horizontal: AppSizes.paddingH),
                   child: _buildTopBar(),
                 ),
+
+                // 播放错误提示（内联）
+                if (playerState.playbackError != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                        AppSizes.paddingH, 8, AppSizes.paddingH, 0),
+                    child: _buildPlaybackErrorBanner(playerState.playbackError!),
+                  ),
                 const SizedBox(height: 12),
 
                 // 中间内容：专辑封面或歌词
@@ -644,5 +692,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       case MusicRepeatMode.one:
         return Icons.repeat_one_rounded;
     }
+  }
+
+  /// 内联播放错误横幅
+  Widget _buildPlaybackErrorBanner(String error) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.error.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.error.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: AppColors.error, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              error,
+              style: TextStyle(
+                color: AppColors.error,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -21,7 +21,11 @@ class LiquidBottomBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerData = ref.watch(playerProvider.select((s) => (song: s.currentSong, isPlaying: s.isPlaying)));
+    final playerData = ref.watch(
+      playerProvider.select(
+        (s) => (song: s.currentSong, isPlaying: s.isPlaying),
+      ),
+    );
     final song = playerData.song;
 
     return Padding(
@@ -86,9 +90,7 @@ class _CircleNavButton extends StatelessWidget {
         height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.25)
-              : AppColors.surfaceLight,
+          color: AppColors.surfaceLight,
         ),
         child: Icon(
           icon,

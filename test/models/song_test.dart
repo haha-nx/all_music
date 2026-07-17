@@ -9,12 +9,12 @@ void main() {
         id: '123',
         name: 'Fly Me to the Moon',
         artist: 'Frank Sinatra',
-        source: SourceType.api,
+        source: SourceType.online,
       );
       expect(song.id, '123');
       expect(song.name, 'Fly Me to the Moon');
       expect(song.artist, 'Frank Sinatra');
-      expect(song.dedupeKey, 'api:fly me to the moon:frank sinatra');
+      expect(song.dedupeKey, 'online:fly me to the moon:frank sinatra');
     });
 
     test('dedupeKey normalizes text', () {
@@ -22,9 +22,9 @@ void main() {
         id: 'x',
         name: '  HELLO  World  ',
         artist: '  Adele  ',
-        source: SourceType.api,
+        source: SourceType.online,
       );
-      expect(song.dedupeKey, 'api:hello  world:adele');
+      expect(song.dedupeKey, 'online:hello  world:adele');
     });
 
     test('copyWith preserves unchanged fields', () {
@@ -33,7 +33,7 @@ void main() {
         name: 'Yesterday',
         artist: 'The Beatles',
         album: 'Help!',
-        source: SourceType.api,
+        source: SourceType.online,
       );
       final copy = original.copyWith(name: 'Tomorrow');
       expect(copy.name, 'Tomorrow');
@@ -49,7 +49,7 @@ void main() {
         artist: 'Queen',
         album: 'A Night at the Opera',
         albumCover: 'https://example.com/cover.jpg',
-        source: SourceType.api,
+        source: SourceType.online,
         sourceId: 'src-1',
       );
       final map = song.toMap();
@@ -75,9 +75,9 @@ void main() {
         id: '0',
         name: 'Online Track',
         artist: 'Artist',
-        source: SourceType.api,
+        source: SourceType.online,
       );
-      expect(api.source, SourceType.api);
+      expect(api.source, SourceType.online);
     });
   });
 }

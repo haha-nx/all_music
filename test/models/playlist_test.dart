@@ -8,14 +8,14 @@ void main() {
     id: 's1',
     name: 'Song One',
     artist: 'Artist A',
-    source: SourceType.api,
+    source: SourceType.online,
   );
 
   final testSong2 = Song(
     id: 's2',
     name: 'Song Two',
     artist: 'Artist B',
-    source: SourceType.api,
+    source: SourceType.online,
   );
 
   group('Playlist model', () {
