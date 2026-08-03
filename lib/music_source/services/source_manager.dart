@@ -3,7 +3,6 @@ import 'package:uuid/uuid.dart';
 
 import '../core/lx_bridge.dart';
 import '../core/music_backend.dart';
-import '../core/netease_direct_backend.dart';
 import '../models/source_definition.dart';
 
 const _uuid = Uuid();
@@ -12,7 +11,6 @@ const _uuid = Uuid();
 ///
 /// 负责：
 /// - 音源的增删改查
-/// - 内置音源管理
 /// - 引擎/后端生命周期
 /// - 脚本导入验证
 class SourceManager {
@@ -24,40 +22,16 @@ class SourceManager {
   /// 后端实例缓存（sourceId → MusicBackend）
   final Map<String, MusicBackend> _backends = {};
 
-  /// 内置音源ID集合
-  final Set<String> _builtinIds = {};
-
   /// 变更回调
   void Function(List<SourceDefinition> sources)? onChanged;
 
   SourceManager(this._dio);
 
-  // ── 内置音源 ──
-
-  /// 初始化内置音源
-  void initBuiltin(List<SourceDefinition> builtins) {
-    for (final source in builtins) {
-      _builtinIds.add(source.id);
-      if (!sources.any((s) => s.id == source.id)) {
-        sources.add(source.copyWith(enabled: true));
-      }
-    }
-    onChanged?.call(List.unmodifiable(sources));
-  }
-
   // ── 后端管理 ──
 
   /// 根据音源类型创建对应后端
   MusicBackend _createBackend(SourceDefinition source) {
-    if (source.backendType == SourceBackendType.direct) {
-      // 直接后端：使用平台专用实现
-      if (source.id == 'builtin_netease') {
-        return NeteaseDirectBackend(sourceId: source.id, dio: _dio);
-      }
-      // 未知直接后端 — 降级为占位（不应出现）
-      return NeteaseDirectBackend(sourceId: source.id, dio: _dio);
-    }
-    // JS 后端
+    // 用户导入的脚本统一走 JS 引擎
     return LxBridge(source, _dio);
   }
 
@@ -233,12 +207,8 @@ class SourceManager {
 
   // ── 管理 ──
 
-  /// 移除音源（内置音源只禁用）
+  /// 移除音源
   void removeSource(String id) {
-    if (_builtinIds.contains(id)) {
-      toggleEnabled(id);
-      return;
-    }
     _backends[id]?.dispose();
     _backends.remove(id);
     sources.removeWhere((s) => s.id == id);

@@ -6,14 +6,13 @@ enum SourceBackendType {
   js,
 
   /// 直接 HTTP 后端（用 Dart 直接调音乐平台 API，零依赖）
+  /// 已无内置使用方，保留枚举值仅为兼容旧数据库记录
   direct,
 }
 
 /// 音源定义 —— 描述一个已导入的音乐源
 ///
-/// 支持两种来源：
-/// - builtin: 内置音源（随App分发，不可删除）
-/// - user: 用户导入的音源（可删除）
+/// 音源全部由用户导入：粘贴脚本或从 URL 下载（可删除、可禁用）
 class SourceDefinition {
   final String id;
   final String name;
@@ -178,7 +177,7 @@ class SourceDefinition {
   }
 }
 
-/// 音源来源
+/// 音源来源（当前仅有用户导入）
 enum SourceOrigin { builtin, user }
 
 /// 单个子源的音源能力

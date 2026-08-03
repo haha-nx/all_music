@@ -8,8 +8,7 @@ import '../providers/music_source_provider.dart';
 
 /// 音源管理中心
 ///
-/// 查看、启用/禁用、导入音源。
-/// 第一阶段：展示内置六音示例源 + 导入入口。
+/// 查看、启用/禁用、导入用户音源。
 class SourceHubScreen extends ConsumerStatefulWidget {
   const SourceHubScreen({super.key});
 
@@ -18,21 +17,6 @@ class SourceHubScreen extends ConsumerStatefulWidget {
 }
 
 class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
-  @override
-  void initState() {
-    super.initState();
-    // 初始化内置源
-    _initBuiltins();
-  }
-
-  Future<void> _initBuiltins() async {
-    final notifier = ref.read(sourceListProvider.notifier);
-    final builtins = await createBuiltinSources();
-    if (builtins.isNotEmpty) {
-      notifier.manager.initBuiltin(builtins);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final sources = ref.watch(sourceListProvider);
@@ -54,7 +38,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
           // ── 头部说明 ──
           _SectionHeader(
             title: '已导入音源',
-            subtitle: '启用音源后可在搜索中使用。内置音源不可删除。',
+            subtitle: '启用音源后可在搜索中使用。可随时移除。',
           ),
 
           const SizedBox(height: 12),
@@ -67,9 +51,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   source: source,
                   onToggle: () =>
                       ref.read(sourceListProvider.notifier).toggle(source.id),
-                  onRemove: source.origin == SourceOrigin.user
-                      ? () => _confirmRemove(source)
-                      : null,
+                  onRemove: () => _confirmRemove(source),
                 )),
 
           const SizedBox(height: 32),
@@ -444,7 +426,6 @@ class _SourceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = source.enabled;
-    final isBuiltin = source.origin == SourceOrigin.builtin;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -497,24 +478,6 @@ class _SourceCard extends StatelessWidget {
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (isBuiltin) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: AppColors.accentBlue.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  '内置',
-                                  style: TextStyle(
-                                    color: AppColors.accentBlue,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 2),

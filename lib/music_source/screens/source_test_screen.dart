@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/constants.dart';
 import '../../widgets/glass_panel.dart';
-import '../core/lx_bridge.dart';
+import '../core/music_backend.dart';
 import '../models/music_track.dart';
 import '../providers/music_source_provider.dart';
 
@@ -19,7 +19,8 @@ class SourceTestScreen extends ConsumerStatefulWidget {
 
 class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
   final _keywordController = TextEditingController(text: '周杰伦');
-  LxBridge? _bridge;
+  MusicBackend? _bridge;
+  String? _activeSourceId;
   bool _loading = false;
   String _status = '等待测试...';
   List<MusicTrack> _results = [];
@@ -33,25 +34,35 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
   }
 
   Future<void> _initEngine() async {
-    setState(() => _status = '正在初始化内置音源...');
+    setState(() => _status = '正在初始化音源...');
 
-    // 确保内置源已加载
     final notifier = ref.read(sourceListProvider.notifier);
-    final builtins = await createBuiltinSources();
-    if (builtins.isNotEmpty) {
-      notifier.manager.initBuiltin(builtins);
+    final enabled = notifier.manager.sources.where((s) => s.enabled).toList();
+    if (enabled.isEmpty) {
+      setState(() {
+        _status = '还没有可用音源，请先到音源中心导入音源';
+      });
+      return;
     }
 
-    // 获取引擎
-    _bridge = await notifier.getBridge('builtin_sixyin');
+    // 依次尝试启用的音源，取第一个初始化成功的
+    for (final source in enabled) {
+      final backend = await notifier.getBackend(source.id);
+      if (backend != null && backend.ready) {
+        _bridge = backend;
+        _activeSourceId = source.id;
+        break;
+      }
+    }
 
     setState(() {
       if (_bridge != null && _bridge!.ready) {
-        _status = '引擎就绪 ✅\n'
+        _status = '后端就绪 ✅\n'
+            '源: $_activeSourceId\n'
             '子源: ${_bridge!.capabilities.keys.join(", ")}\n'
             '搜索源: ${_bridge!.searchKeys.join(", ")}';
       } else {
-        _status = '引擎初始化失败 ❌\n${_bridge?.lastError ?? "未知错误"}';
+        _status = '后端初始化失败 ❌\n${_bridge?.lastError ?? "未知错误"}';
       }
     });
   }

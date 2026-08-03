@@ -24,8 +24,11 @@ dependencies:
   dio: ^5.8.0+1
   cached_network_image: ^3.4.1
 
-  # JavaScript engine (source scripts)
-  flutter_js: ^0.8.7
+  # JavaScript engine (source scripts) — 自带原生库，无需 libjsc.so
+  # 使用 vendored 本地副本：官方 0.1.1 的 CMakeLists 漏链 Android liblog，
+  # 且 build.gradle 未设 Kotlin jvmTarget，已在 local_plugins 内修复。
+  quickjs_engine:
+    path: local_plugins/quickjs_engine
 
   # Navigation
   go_router: ^14.8.1
@@ -50,4 +53,4 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/scripts/sixyin_latest.js
+    - assets/scripts/crypto-js.js

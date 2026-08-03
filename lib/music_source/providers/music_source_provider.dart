@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/lx_bridge.dart';
+import '../core/music_backend.dart';
 import '../models/music_track.dart';
 import '../models/source_definition.dart';
 import '../services/download_manager.dart';
@@ -43,18 +43,18 @@ class SourceListNotifier extends StateNotifier<List<SourceDefinition>> {
   }
 
   Future<void> _init() async {
-    // 从数据库加载（todo: 接入SQLite）
-    // 首次启动时初始化内置源
-    if (state.isEmpty) {
-      _manager.initBuiltin(_builtinSources);
-    }
+    // 音源全部由用户导入，不做内置初始化
   }
 
   SourceManager get manager => _manager;
 
-  /// 获取音源引擎
+  /// 获取音源后端
   Future<LxBridge?> getBridge(String sourceId) =>
       _manager.getBridge(sourceId);
+
+  /// 获取音源后端（任意类型：JS 或 direct）
+  Future<MusicBackend?> getBackend(String sourceId) =>
+      _manager.getBackend(sourceId);
 
   /// 导入脚本
   Future<SourceImportResult> importScript(String script) =>
@@ -183,47 +183,5 @@ class DownloadNotifier extends StateNotifier<List<DownloadTask>> {
 }
 
 // ═══════════════════════════════════════
-// Built-in Sources
+// Built-in Sources (已移除 — 音源全部由用户导入)
 // ═══════════════════════════════════════
-
-/// 从 assets 加载六音示例源
-Future<String> _loadSixyinScript() async {
-  try {
-    return await rootBundle.loadString('assets/scripts/sixyin_latest.js');
-  } catch (e) {
-    // ignore: avoid_print
-    print('加载六音示例源失败: $e');
-    return '';
-  }
-}
-
-/// 内置音源列表
-/// 第一阶段：内置六音示例源用于测试
-List<SourceDefinition> get _builtinSources {
-  // 六音源会在首次启动时从 assets 加载
-  // 这里先返回空列表，实际加载在 _init 中完成
-  return [];
-}
-
-/// 初始化内置六音示例源
-Future<List<SourceDefinition>> createBuiltinSources() async {
-  final sixyinScript = await _loadSixyinScript();
-  if (sixyinScript.isEmpty) return [];
-
-  final meta = SourceDefinition.parseMeta(sixyinScript);
-
-  return [
-    SourceDefinition(
-      id: 'builtin_sixyin',
-      name: '六音音源（示例）',
-      version: meta['version'],
-      author: meta['author'],
-      description: meta['description'] ?? '多平台聚合音乐源（酷狗/酷我/咪咕/网易/QQ）',
-      homepage: meta['homepage'],
-      scriptSource: sixyinScript,
-      origin: SourceOrigin.builtin,
-      enabled: true,
-      createdAt: DateTime.now(),
-    ),
-  ];
-}

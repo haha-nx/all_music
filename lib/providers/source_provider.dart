@@ -1,9 +1,9 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
 import '../models/music_source.dart';
 import '../music_source/core/lx_bridge.dart';
+import '../music_source/core/music_backend.dart';
 import '../music_source/models/source_definition.dart';
 import '../music_source/services/source_manager.dart';
 import '../services/storage_service.dart';
@@ -21,16 +21,23 @@ class ImportResult {
   factory ImportResult.fail(String error) => ImportResult._(success: false, error: error);
 }
 
+/// 音源就绪状态
+enum SourceReadyState { loading, ready, error }
+
 /// 音源状态管理
-///
-/// 内部使用全新的 SourceManager + LxBridge 引擎，
-/// 对外暴露旧的 MusicSource 模型以保持兼容。
 class SourceNotifier extends StateNotifier<List<MusicSource>> {
   late final SourceManager _manager;
   final Dio _dio;
 
-  /// 内置音源 ID 集合
-  final Set<String> _builtInIds = {};
+  /// 引擎就绪状态
+  SourceReadyState _readyState = SourceReadyState.loading;
+  String? _readyError;
+
+  SourceReadyState get readyState => _readyState;
+  String? get readyError => _readyError;
+
+  bool get isEngineReady =>
+      _readyState == SourceReadyState.ready && _manager.sources.any((s) => s.enabled);
 
   SourceNotifier(this._dio) : super([]) {
     _manager = SourceManager(_dio);
@@ -40,74 +47,58 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
 
   Future<void> _init() async {
     try {
-      // 从数据库加载现有音源
+      // 从数据库加载用户导入的音源
+      // 丢弃旧版内置音源（builtin_*，含已废弃的六音源）与空脚本记录
       final saved = await storageService.loadSources();
-      state = saved.where((s) => s.scriptSource.isNotEmpty).toList();
+      final validSources = saved
+          .where((s) => !s.id.startsWith('builtin_') && s.scriptSource.isNotEmpty)
+          .toList();
 
-      // 初始化新 SourceManager
-      for (final source in state) {
-        _manager.sources.add(_toDefinition(source));
+      state = List.from(validSources);
+      for (final source in validSources) {
+        // 幂等：manager 中已存在则跳过，避免重复项
+        if (!_manager.sources.any((d) => d.id == source.id)) {
+          _manager.sources.add(_toDefinition(source));
+        }
       }
 
-      // 加载内置六音示例源
-      await _ensureBuiltinSources();
+      // 预初始化用户音源引擎（让搜索时无需等待）
+      await _preInitEngines();
+
+      _readyState = SourceReadyState.ready;
     } catch (e) {
       print('SourceNotifier._init error: $e');
-      await _ensureBuiltinSources();
+      _readyState = SourceReadyState.error;
+      _readyError = e.toString();
     }
   }
 
-  Future<void> _ensureBuiltinSources() async {
-    // 从 assets 加载六音脚本
-    String? sixyinScript;
-    try {
-      sixyinScript = await _loadBuiltinScript();
-    } catch (e) {
-      print('SourceNotifier: 内置脚本加载失败: $e');
+  /// 预初始化所有已启用音源的JS引擎
+  Future<void> _preInitEngines() async {
+    final sourcesToInit = List<MusicSource>.from(state);
+    if (sourcesToInit.isEmpty) {
+      print('[SourceNotifier] 没有音源需要初始化');
+      return;
     }
 
-    if (sixyinScript == null || sixyinScript.isEmpty) return;
-
-    final trimScript = sixyinScript.trim();
-    final meta = SourceDefinition.parseMeta(sixyinScript);
-    final builtinId = 'builtin_sixyin';
-
-    // 已存在则跳过
-    if (state.any((s) => s.id == builtinId)) return;
-
-    // 如果有同内容的源，也跳过
-    final existingByContent = state.where(
-      (s) => s.scriptSource.trim() == trimScript,
-    );
-    if (existingByContent.isNotEmpty) return;
-
-    // 创建内置音源（旧模型）
-    final musicSource = MusicSource(
-      id: builtinId,
-      name: '六音音源（示例）',
-      scriptSource: sixyinScript,
-      version: meta['version'],
-      author: meta['author'],
-      description: meta['description'] ?? '多平台聚合音乐源',
-      enabled: true,
-      createdAt: DateTime.now(),
-    );
-
-    state = [...state, musicSource];
-    _builtInIds.add(builtinId);
-    _manager.sources.add(_toDefinition(musicSource));
-    await _save();
-  }
-
-  Future<String?> _loadBuiltinScript() async {
-    try {
-      return await rootBundle.loadString('assets/scripts/sixyin_latest.js');
-    } catch (e) {
-      return null;
+    for (final source in sourcesToInit) {
+      if (!source.enabled) continue;
+      try {
+        final backend = await _manager.getBackend(source.id);
+        if (backend != null && backend.ready) {
+          print('[SourceNotifier] JS 引擎就绪: ${source.name} '
+              '(子源: ${backend.searchKeys.join(", ")})');
+        } else {
+          final err = backend?.lastError;
+          print('[SourceNotifier] 初始化失败: ${source.name}'
+              '${err != null ? " — $err" : ""}');
+        }
+      } catch (e) {
+        print('[SourceNotifier] 初始化异常: ${source.name} — $e');
+      }
     }
   }
 
-  /// SourceDefinition → MusicSource 转换
   MusicSource _toMusicSource(SourceDefinition def) {
     return MusicSource(
       id: def.id,
@@ -122,7 +113,6 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
     );
   }
 
-  /// MusicSource → SourceDefinition 转换
   SourceDefinition _toDefinition(MusicSource ms) {
     return SourceDefinition(
       id: ms.id,
@@ -132,34 +122,38 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
       author: ms.author,
       description: ms.description,
       homepage: ms.scriptUrl,
+      // 用户导入的脚本统一走 JS 引擎
+      backendType: SourceBackendType.js,
       enabled: ms.enabled,
       createdAt: ms.createdAt,
-      origin: _builtInIds.contains(ms.id) ? SourceOrigin.builtin : SourceOrigin.user,
+      origin: SourceOrigin.user,
     );
   }
 
-  /// 同步 SourceManager → state
   void _syncFromManager() {
     state = _manager.sources.map(_toMusicSource).toList();
     _save();
   }
 
-  // ── 公共 API（兼容旧接口） ──
+  // ── 公共 API ──
 
-  /// 暴露内部 SourceManager（供 search_provider 等使用）
   SourceManager get manager => _manager;
 
-  /// 获取 JS 引擎（通过新的 LxBridge）
   Future<LxBridge?> getEngine(String sourceId) async {
-    return _manager.getBridge(sourceId);
+    final b = await _manager.getBackend(sourceId);
+    if (b is LxBridge) return b;
+    return null;
   }
 
-  /// 解析脚本头部的元信息
+  /// 获取任意类型后端（JS 引擎 或 直接后端）
+  Future<MusicBackend?> getBackend(String sourceId) async {
+    return _manager.getBackend(sourceId);
+  }
+
   Map<String, String?> parseScriptMeta(String scriptSource) {
     return SourceDefinition.parseMeta(scriptSource);
   }
 
-  /// 通过粘贴脚本内容导入
   Future<ImportResult> importFromScript(String scriptSource) async {
     final result = await _manager.importFromScript(scriptSource);
     if (result.success && result.source != null) {
@@ -168,7 +162,6 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
     return ImportResult.fail(result.error ?? '导入失败');
   }
 
-  /// 通过 URL 下载并导入
   Future<ImportResult> importFromUrl(String url) async {
     final result = await _manager.importFromUrl(url);
     if (result.success && result.source != null) {
@@ -177,7 +170,6 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
     return ImportResult.fail(result.error ?? '导入失败');
   }
 
-  /// 更新音源
   void updateSource(MusicSource updated) {
     final idx = _manager.sources.indexWhere((s) => s.id == updated.id);
     if (idx >= 0) {
@@ -186,17 +178,14 @@ class SourceNotifier extends StateNotifier<List<MusicSource>> {
     }
   }
 
-  /// 移除音源
   void removeSource(String id) {
     _manager.removeSource(id);
   }
 
-  /// 切换启用
   void toggleEnabled(String id) {
     _manager.toggleEnabled(id);
   }
 
-  /// 获取所有启用的音源
   List<MusicSource> get enabledSources =>
       state.where((s) => s.enabled).toList();
 
