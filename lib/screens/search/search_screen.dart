@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
+import '../../models/song.dart';
 import '../../providers/player_provider.dart';
 import '../../providers/search_provider.dart';
 import '../../providers/source_provider.dart';
+import '../../music_source/models/music_track.dart';
 import '../../widgets/album_art.dart';
 import '../../widgets/song_context_menu.dart';
 
@@ -33,6 +36,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final searchState = ref.watch(searchProvider);
     final sources = ref.watch(sourceProvider);
     final playerState = ref.watch(playerProvider);
+    final sourceNotifier = ref.read(sourceProvider.notifier);
+    final engineReady = sourceNotifier.isEngineReady;
+    final engineLoading = sourceNotifier.readyState == SourceReadyState.loading;
+    final engineError = sourceNotifier.readyError;
 
     return CustomScrollView(
       slivers: [
@@ -88,8 +95,71 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
         ),
 
+        // 搜索类型切换（单曲/专辑/歌手/歌单）
+        SliverToBoxAdapter(
+          child: _buildTypeChips(),
+        ),
+
         // 音源状态提示
-        if (sources.isEmpty)
+        if (engineLoading)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              child: GlassPanel(
+                blur: 10,
+                borderRadius: 14,
+                tintColor: AppColors.accentBlue.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.accentBlue,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '音源引擎初始化中...',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else if (!engineReady && engineError != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              child: GlassPanel(
+                blur: 10,
+                borderRadius: 14,
+                tintColor: AppColors.error.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '引擎错误: $engineError',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
+        else if (sources.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
@@ -155,6 +225,33 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
           )
+        else if (searchState.error != null)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8),
+              child: GlassPanel(
+                blur: 10,
+                borderRadius: 14,
+                tintColor: AppColors.error.withValues(alpha: 0.08),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          searchState.error!,
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          )
         else if (searchState.results.isEmpty && searchState.hasSearched)
           SliverFillRemaining(
             child: Center(
@@ -170,6 +267,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ],
               ),
             ),
+          )
+        else if (searchState.results.isNotEmpty &&
+            searchState.searchType != SearchType.song)
+          SliverToBoxAdapter(
+            child: _buildMediaGrid(searchState.results),
           )
         else if (searchState.results.isNotEmpty)
           SliverList(
@@ -267,6 +369,88 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ],
     );
   }
+
+  // ──── 搜索类型切换 ────
+
+  Widget _buildTypeChips() {
+    final type = ref.watch(searchProvider.select((s) => s.searchType));
+    return SizedBox(
+      height: 40,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 4),
+        children: [
+          for (final t in SearchType.values)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: GestureDetector(
+                onTap: () => ref.read(searchProvider.notifier).setSearchType(t),
+                child: GlassPanel(
+                  blur: 10,
+                  borderRadius: 20,
+                  tintColor: type == t
+                      ? AppColors.primary.withValues(alpha: 0.3)
+                      : AppColors.surfaceLight,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(
+                      child: Text(
+                        t.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: type == t
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ──── 专辑/歌手/歌单结果网格 ────
+
+  Widget _buildMediaGrid(List<Song> songs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.68,
+        ),
+        itemCount: songs.length,
+        itemBuilder: (context, index) {
+          final song = songs[index];
+          return _MediaCard(song: song, onTap: () => _onMediaTap(song));
+        },
+      ),
+    );
+  }
+
+  /// 点击专辑/歌手/歌单卡片 → 用其名称搜索歌曲（lx 标准契约不提供实体歌曲列表，回退为单曲搜索）
+  void _onMediaTap(Song song) {
+    final notifier = ref.read(searchProvider.notifier);
+    final type = ref.read(searchProvider).searchType;
+    final keyword = switch (type) {
+      SearchType.artist => song.name,
+      SearchType.album =>
+        song.artist.isNotEmpty ? '${song.name} ${song.artist}' : song.name,
+      SearchType.playlist => song.name,
+      _ => song.name,
+    };
+    _searchController.text = keyword;
+    notifier.search(keyword.trim(), type: SearchType.song);
+  }
 }
 
 /// 搜索失败音源提示条
@@ -307,6 +491,88 @@ class _FailedSourcesBanner extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 专辑/歌手/歌单搜索结果卡片
+class _MediaCard extends StatelessWidget {
+  final Song song;
+  final VoidCallback onTap;
+
+  const _MediaCard({required this.song, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = song.artist.isNotEmpty
+        ? song.artist
+        : (song.album?.isNotEmpty == true ? song.album! : '');
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 封面（自适应宽高比 1:1）
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: song.albumCover != null && song.albumCover!.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: song.albumCover!,
+                      fit: BoxFit.cover,
+                      placeholder: (_, _) => _placeholder(),
+                      errorWidget: (_, _, _) => _placeholder(),
+                    )
+                  : _placeholder(),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            song.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.2),
+            AppColors.accentPurple.withValues(alpha: 0.06),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.album_rounded,
+          color: AppColors.textTertiary,
+          size: 32,
         ),
       ),
     );

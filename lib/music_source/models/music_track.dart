@@ -1,7 +1,30 @@
 import 'dart:convert';
 
+/// 搜索类型（lx-music 标准）
+///
+/// 对应音源脚本 search 动作的 type 参数：
+/// - song: 单曲（默认）
+/// - album: 专辑
+/// - artist: 歌手
+/// - playlist: 歌单
+enum SearchType {
+  song('song', '单曲'),
+  album('album', '专辑'),
+  artist('artist', '歌手'),
+  playlist('playlist', '歌单');
+
+  final String value;
+  final String label;
+
+  const SearchType(this.value, this.label);
+
+  static SearchType fromValue(String? v) =>
+      values.firstWhere((e) => e.value == v, orElse: () => SearchType.song);
+}
+
 /// 搜索结果中的音乐轨道信息
 ///
+/// 这是从音源搜索返回的标准化歌曲信息，
 /// 这是从音源搜索返回的标准化歌曲信息，
 /// 可用于播放、下载、展示。
 class MusicTrack {

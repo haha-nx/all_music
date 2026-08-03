@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/source_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../models/music_source.dart';
+import '../../music_source/models/music_track.dart';
 
 /// 设置页 — 音源管理 + 关于
 class SettingsScreen extends ConsumerWidget {
@@ -178,6 +180,78 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       SliverToBoxAdapter(
+        child: _buildSectionTitle('播放与下载'),
+      ),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+          child: GlassPanel(
+            blur: 12,
+            borderRadius: AppSizes.cardBorderRadius,
+            tintColor: AppColors.surfaceLight,
+            child: Column(
+              children: [
+                // 默认音质
+                InkWell(
+                  onTap: () => _showQualityPicker(context, ref),
+                  borderRadius: BorderRadius.circular(AppSizes.cardBorderRadius),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.high_quality_rounded,
+                            color: AppColors.primary, size: 24),
+                        const SizedBox(width: 14),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '默认音质',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              SizedBox(height: 2),
+                              Text(
+                                '播放与下载时优先请求的音质',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textTertiary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          _qualityLabel(
+                              ref.watch(settingsProvider).defaultQuality),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textTertiary, size: 20),
+                      ],
+                    ),
+                  ),
+                ),
+                const Divider(height: 1, color: AppColors.surfaceDark),
+                _buildMenuItem(
+                  icon: Icons.download_rounded,
+                  title: '下载管理',
+                  subtitle: '查看和管理下载任务',
+                  onTap: () => context.push('/downloads'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(
         child: _buildSectionTitle('关于'),
       ),
       SliverToBoxAdapter(
@@ -220,6 +294,77 @@ class SettingsScreen extends ConsumerWidget {
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondary,
+        ),
+      ),
+    );
+  }
+
+  /// 音质值 → 显示标签
+  String _qualityLabel(String q) {
+    for (final quality in MusicQuality.values) {
+      if (quality.value == q) return quality.label;
+    }
+    return q;
+  }
+
+  /// 默认音质选择面板
+  void _showQualityPicker(BuildContext context, WidgetRef ref) {
+    final current = ref.read(settingsProvider).defaultQuality;
+    final options = [
+      MusicQuality.lq,
+      MusicQuality.hq,
+      MusicQuality.flac,
+      MusicQuality.flac24bit,
+    ];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GlassPanel(
+        blur: 20,
+        borderRadius: 20,
+        tintColor: AppColors.surfaceDark,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  '默认音质',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              for (final quality in options)
+                ListTile(
+                  dense: true,
+                  title: Text(
+                    quality.label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: quality.value == current
+                          ? AppColors.primary
+                          : AppColors.textPrimary,
+                    ),
+                  ),
+                  trailing: quality.value == current
+                      ? const Icon(Icons.check_rounded,
+                          color: AppColors.primary, size: 20)
+                      : null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    ref
+                        .read(settingsProvider.notifier)
+                        .setDefaultQuality(quality.value);
+                  },
+                ),
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );

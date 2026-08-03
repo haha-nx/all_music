@@ -423,6 +423,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   // ──── 浏览分类 ────
   Widget _buildBrowseSection(int sourceCount, int favCount, int plCount) {
     final items = [
+      _BrowseItem('排行榜', Icons.leaderboard_rounded, AppColors.primary, '/lists', '热榜新歌'),
       if (favCount > 0) _BrowseItem('收藏', Icons.favorite_rounded, AppColors.primary, '/favorites', '$favCount 首'),
       if (plCount > 0) _BrowseItem('歌单', Icons.playlist_play_rounded, AppColors.accentPurple, null, '$plCount 个'),
       _BrowseItem('音源', Icons.dns_rounded, AppColors.accentBlue, '/settings', '$sourceCount 个已启用'),

@@ -1,3 +1,14 @@
+import 'music_list.dart';
+
+/// 音源后端类型
+enum SourceBackendType {
+  /// JS 引擎（需 QuickJS/JSCore，适合复杂的 LX 脚本）
+  js,
+
+  /// 直接 HTTP 后端（用 Dart 直接调音乐平台 API，零依赖）
+  direct,
+}
+
 /// 音源定义 —— 描述一个已导入的音乐源
 ///
 /// 支持两种来源：
@@ -11,11 +22,14 @@ class SourceDefinition {
   final String? description;
   final String? homepage;
 
-  /// JS 脚本源码
+  /// JS 脚本源码（仅 backendType=js 时使用）
   final String scriptSource;
 
   /// 来源类型
   final SourceOrigin origin;
+
+  /// 后端类型（js / direct）
+  final SourceBackendType backendType;
 
   /// 是否启用
   final bool enabled;
@@ -34,8 +48,9 @@ class SourceDefinition {
     this.author,
     this.description,
     this.homepage,
-    required this.scriptSource,
+    this.scriptSource = '',
     this.origin = SourceOrigin.user,
+    this.backendType = SourceBackendType.js,
     this.enabled = true,
     required this.createdAt,
     this.capabilities = const {},
@@ -50,6 +65,7 @@ class SourceDefinition {
     String? homepage,
     String? scriptSource,
     SourceOrigin? origin,
+    SourceBackendType? backendType,
     bool? enabled,
     DateTime? createdAt,
     Map<String, SourceCapability>? capabilities,
@@ -63,6 +79,7 @@ class SourceDefinition {
       homepage: homepage ?? this.homepage,
       scriptSource: scriptSource ?? this.scriptSource,
       origin: origin ?? this.origin,
+      backendType: backendType ?? this.backendType,
       enabled: enabled ?? this.enabled,
       createdAt: createdAt ?? this.createdAt,
       capabilities: capabilities ?? this.capabilities,
@@ -73,9 +90,19 @@ class SourceDefinition {
   bool get canSearch =>
       capabilities.values.any((c) => c.actions.contains('search'));
 
+  /// 是否有榜单能力（list / listDetail）
+  bool get canList =>
+      capabilities.values.any((c) => c.actions.contains('list'));
+
   /// 获取所有有搜索能力的源key
   List<String> get searchSourceKeys => capabilities.entries
       .where((e) => e.value.actions.contains('search'))
+      .map((e) => e.key)
+      .toList();
+
+  /// 获取所有有榜单能力的源key
+  List<String> get listSourceKeys => capabilities.entries
+      .where((e) => e.value.actions.contains('list'))
       .map((e) => e.key)
       .toList();
 
@@ -121,6 +148,7 @@ class SourceDefinition {
       'homepage': homepage,
       'scriptSource': scriptSource,
       'origin': origin.name,
+      'backendType': backendType.name,
       'enabled': enabled ? 1 : 0,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -138,6 +166,10 @@ class SourceDefinition {
       origin: SourceOrigin.values.firstWhere(
         (e) => e.name == map['origin'],
         orElse: () => SourceOrigin.user,
+      ),
+      backendType: SourceBackendType.values.firstWhere(
+        (e) => e.name == map['backendType'],
+        orElse: () => SourceBackendType.js,
       ),
       enabled: (map['enabled'] as int?) == 1,
       createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
@@ -166,12 +198,16 @@ class SourceCapability {
   /// 支持的音乐品质
   final List<String> qualitys;
 
+  /// 支持的榜单类型（lx 标准 listTypes，如云音乐飙升榜/新歌榜）
+  final List<ListTypeInfo> listTypes;
+
   const SourceCapability({
     required this.key,
     required this.name,
     this.type = 'music',
     required this.actions,
     this.qualitys = const ['128k'],
+    this.listTypes = const [],
   });
 
   factory SourceCapability.fromJson(String key, Map<String, dynamic> json) {
@@ -181,8 +217,16 @@ class SourceCapability {
       type: json['type']?.toString() ?? 'music',
       actions: (json['actions'] as List?)?.cast<String>() ?? [],
       qualitys: (json['qualitys'] as List?)?.cast<String>() ?? ['128k'],
+      listTypes: (json['listTypes'] as List?)
+              ?.whereType<Map>()
+              .map((m) => ListTypeInfo.fromJson(m.cast<String, dynamic>()))
+              .toList() ??
+          const [],
     );
   }
+
+  /// 是否有榜单能力
+  bool get hasList => actions.contains('list');
 }
 
 /// 音源导入结果

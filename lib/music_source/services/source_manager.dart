@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/lx_bridge.dart';
+import '../core/music_backend.dart';
+import '../core/netease_direct_backend.dart';
 import '../models/source_definition.dart';
 
 const _uuid = Uuid();
@@ -11,7 +13,7 @@ const _uuid = Uuid();
 /// 负责：
 /// - 音源的增删改查
 /// - 内置音源管理
-/// - 引擎生命周期
+/// - 引擎/后端生命周期
 /// - 脚本导入验证
 class SourceManager {
   final Dio _dio;
@@ -19,8 +21,8 @@ class SourceManager {
   /// 所有音源
   final List<SourceDefinition> sources = [];
 
-  /// 引擎缓存（sourceId → LxBridge）
-  final Map<String, LxBridge> _bridges = {};
+  /// 后端实例缓存（sourceId → MusicBackend）
+  final Map<String, MusicBackend> _backends = {};
 
   /// 内置音源ID集合
   final Set<String> _builtinIds = {};
@@ -43,22 +45,36 @@ class SourceManager {
     onChanged?.call(List.unmodifiable(sources));
   }
 
-  // ── 引擎管理 ──
+  // ── 后端管理 ──
 
-  /// 获取或创建音源的引擎实例
-  Future<LxBridge?> getBridge(String sourceId) async {
-    // 已有可用引擎
-    if (_bridges.containsKey(sourceId)) {
-      final bridge = _bridges[sourceId]!;
-      if (!bridge.isLoaded) {
-        final ok = await bridge.init();
+  /// 根据音源类型创建对应后端
+  MusicBackend _createBackend(SourceDefinition source) {
+    if (source.backendType == SourceBackendType.direct) {
+      // 直接后端：使用平台专用实现
+      if (source.id == 'builtin_netease') {
+        return NeteaseDirectBackend(sourceId: source.id, dio: _dio);
+      }
+      // 未知直接后端 — 降级为占位（不应出现）
+      return NeteaseDirectBackend(sourceId: source.id, dio: _dio);
+    }
+    // JS 后端
+    return LxBridge(source, _dio);
+  }
+
+  /// 获取或创建音源的后端实例
+  Future<MusicBackend?> getBackend(String sourceId) async {
+    // 已有可用后端
+    if (_backends.containsKey(sourceId)) {
+      final backend = _backends[sourceId]!;
+      if (!backend.isLoaded) {
+        final ok = await backend.init();
         if (!ok) {
-          bridge.dispose();
-          _bridges.remove(sourceId);
+          backend.dispose();
+          _backends.remove(sourceId);
           return null;
         }
       }
-      return bridge;
+      return backend;
     }
 
     // 查找源
@@ -66,39 +82,61 @@ class SourceManager {
     if (source == null) return null;
 
     // 创建并初始化
-    final bridge = LxBridge(source, _dio);
-    final ok = await bridge.init();
+    final backend = _createBackend(source);
+    final ok = await backend.init();
     if (!ok) {
-      bridge.dispose();
+      backend.dispose();
       return null;
     }
 
     // 更新 capabilities
-    if (bridge.capabilities.isNotEmpty && source.capabilities.isEmpty) {
+    if (backend.capabilities.isNotEmpty && source.capabilities.isEmpty) {
       final idx = sources.indexWhere((s) => s.id == source.id);
       if (idx >= 0) {
         sources[idx] = source.copyWith(
-          capabilities: Map.from(bridge.capabilities),
+          capabilities: Map.from(backend.capabilities),
         );
         onChanged?.call(List.unmodifiable(sources));
       }
     }
 
-    _bridges[sourceId] = bridge;
-    return bridge;
+    _backends[sourceId] = backend;
+    return backend;
   }
 
-  /// 获取所有已就绪的引擎
-  Future<List<LxBridge>> getReadyBridges() async {
-    final bridges = <LxBridge>[];
+  /// 兼容旧 API — 返回 LxBridge? (实际是 MusicBackend)
+  /// 已废弃，请使用 getBackend
+  @Deprecated('使用 getBackend')
+  Future<LxBridge?> getBridge(String sourceId) async {
+    final b = await getBackend(sourceId);
+    if (b is LxBridge) return b;
+    return null;
+  }
+
+  /// 获取所有已就绪的后端
+  Future<List<MusicBackend>> getReadyBridges() async {
+    final backends = <MusicBackend>[];
     for (final source in sources) {
       if (!source.enabled) continue;
-      final bridge = await getBridge(source.id);
-      if (bridge != null && bridge.ready) {
-        bridges.add(bridge);
+      final backend = await getBackend(source.id);
+      if (backend != null && backend.ready) {
+        backends.add(backend);
       }
     }
-    return bridges;
+    return backends;
+  }
+
+  /// 获取所有已就绪且支持榜单的后端
+  Future<List<MusicBackend>> getReadyListBridges() async {
+    final backends = <MusicBackend>[];
+    for (final source in sources) {
+      if (!source.enabled) continue;
+      final backend = await getBackend(source.id);
+      if (backend != null && backend.ready && backend.hasList) {
+        backends.add(backend);
+      }
+    }
+    return backends;
   }
 
   // ── 导入 ──
@@ -121,7 +159,7 @@ class SourceManager {
     final meta = SourceDefinition.parseMeta(scriptSource);
     final name = meta['name'] ?? '未命名音源';
 
-    // 验证脚本
+    // 验证脚本（创建临时源 + LxBridge）
     final tempSource = SourceDefinition(
       id: _uuid.v4(),
       name: name,
@@ -131,6 +169,7 @@ class SourceManager {
       homepage: meta['homepage'],
       scriptSource: scriptSource,
       origin: SourceOrigin.user,
+      backendType: SourceBackendType.js,
       enabled: true,
       createdAt: DateTime.now(),
     );
@@ -159,7 +198,7 @@ class SourceManager {
       capabilities: Map.from(bridge.capabilities),
     );
     sources.add(saved);
-    _bridges[saved.id] = bridge;
+    _backends[saved.id] = bridge;
     onChanged?.call(List.unmodifiable(sources));
 
     return SourceImportResult.ok(saved);
@@ -200,8 +239,8 @@ class SourceManager {
       toggleEnabled(id);
       return;
     }
-    _bridges[id]?.dispose();
-    _bridges.remove(id);
+    _backends[id]?.dispose();
+    _backends.remove(id);
     sources.removeWhere((s) => s.id == id);
     onChanged?.call(List.unmodifiable(sources));
   }
@@ -212,10 +251,10 @@ class SourceManager {
     if (idx < 0) return;
     sources[idx] = sources[idx].copyWith(enabled: !sources[idx].enabled);
 
-    // 禁用时释放引擎
+    // 禁用时释放后端
     if (!sources[idx].enabled) {
-      _bridges[id]?.dispose();
-      _bridges.remove(id);
+      _backends[id]?.dispose();
+      _backends.remove(id);
     }
 
     onChanged?.call(List.unmodifiable(sources));
@@ -269,10 +308,10 @@ class SourceManager {
 
   /// 释放所有资源
   void dispose() {
-    for (final bridge in _bridges.values) {
-      bridge.dispose();
+    for (final backend in _backends.values) {
+      backend.dispose();
     }
-    _bridges.clear();
+    _backends.clear();
     sources.clear();
   }
 }

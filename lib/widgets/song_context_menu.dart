@@ -5,6 +5,10 @@ import '../models/song.dart';
 import '../providers/favorites_provider.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
+import '../providers/settings_provider.dart';
+import '../providers/source_provider.dart';
+import '../music_source/core/track_adapter.dart';
+import '../music_source/providers/music_source_provider.dart';
 import 'album_art.dart';
 
 /// 歌曲操作菜单 - 长按或更多操作时弹出
@@ -123,6 +127,14 @@ class SongContextMenu extends ConsumerWidget {
               },
             ),
             _MenuItem(
+              icon: Icons.download_rounded,
+              title: '下载',
+              onTap: () {
+                Navigator.pop(context);
+                _download(context, ref, song);
+              },
+            ),
+            _MenuItem(
               icon: Icons.playlist_add_rounded,
               title: '添加到歌单',
               onTap: () {
@@ -135,6 +147,56 @@ class SongContextMenu extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// 下载歌曲：按默认音质获取播放地址后加入下载队列
+  Future<void> _download(BuildContext context, WidgetRef ref, Song song) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final quality = ref.read(settingsProvider).defaultQuality;
+
+    if (song.sourceId == null) {
+      messenger.showSnackBar(const SnackBar(
+        content: Text('本地歌曲无需下载'),
+        backgroundColor: AppColors.surfaceDark,
+        behavior: SnackBarBehavior.floating,
+      ));
+      return;
+    }
+
+    messenger.showSnackBar(SnackBar(
+      content: Text('正在获取「${song.name}」播放地址...'),
+      backgroundColor: AppColors.surfaceDark,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 2),
+    ));
+
+    try {
+      final backend =
+          await ref.read(sourceProvider.notifier).getBackend(song.sourceId!);
+      if (backend == null) throw Exception('音源不可用');
+
+      final track = TrackAdapter.fromLegacySong(song);
+      final url = await backend.getMusicUrl(track, quality: quality);
+      if (url == null || url.isEmpty) throw Exception('获取播放地址失败');
+
+      ref.read(downloadProvider.notifier).addAndStart(
+            track,
+            url,
+            quality: quality,
+          );
+      messenger.showSnackBar(SnackBar(
+        content: Text('已开始下载：${song.name}'),
+        backgroundColor: AppColors.surfaceDark,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(
+        content: Text('下载失败：$e'),
+        backgroundColor: AppColors.surfaceDark,
+        behavior: SnackBarBehavior.floating,
+      ));
+    }
   }
 
   void _showPlaylistPicker(BuildContext context, WidgetRef ref, Song song) {

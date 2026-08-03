@@ -1,4 +1,4 @@
-import '../core/lx_bridge.dart';
+import '../core/music_backend.dart';
 import '../models/music_track.dart';
 
 /// 跨音源搜索聚合器
@@ -7,18 +7,19 @@ import '../models/music_track.dart';
 class SearchAggregator {
   /// 执行跨源搜索
   ///
-  /// 并行搜索所有已就绪的引擎，合并结果并按 dedupeKey 去重。
+  /// 并行搜索所有已就绪的后端，合并结果并按 dedupeKey 去重。
   static Future<List<MusicTrack>> search(
-    List<LxBridge> bridges,
+    List<MusicBackend> bridges,
     String keyword, {
     int limit = 20,
+    SearchType type = SearchType.song,
   }) async {
     if (bridges.isEmpty) return [];
 
     // 并行搜索所有源
     final futures = bridges.map((bridge) async {
       try {
-        return await bridge.search(keyword, limit: limit);
+        return await bridge.search(keyword, limit: limit, type: type);
       } catch (e) {
         return <MusicTrack>[];
       }
@@ -32,7 +33,11 @@ class SearchAggregator {
 
     for (final tracks in results) {
       for (final track in tracks) {
-        if (seen.add(track.dedupeKey)) {
+        // 非单曲类型（专辑/歌手/歌单）按 id+title 去重
+        final key = type == SearchType.song
+            ? track.dedupeKey
+            : '${track.sourceKey}:${track.id}:${track.title}'.toLowerCase();
+        if (track.id.isNotEmpty && seen.add(key)) {
           merged.add(track);
         }
       }
@@ -41,14 +46,15 @@ class SearchAggregator {
     return merged;
   }
 
-  /// 在单个引擎中搜索
+  /// 在单个后端中搜索
   static Future<List<MusicTrack>> searchSingle(
-    LxBridge bridge,
+    MusicBackend bridge,
     String keyword, {
     int limit = 20,
+    SearchType type = SearchType.song,
   }) async {
     try {
-      return await bridge.search(keyword, limit: limit);
+      return await bridge.search(keyword, limit: limit, type: type);
     } catch (e) {
       return [];
     }

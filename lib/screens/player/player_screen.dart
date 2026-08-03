@@ -5,7 +5,7 @@ import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../models/lyric.dart';
 import '../../providers/player_provider.dart'
-    show PlayerState, MusicRepeatMode, playerProvider;
+    show PlayerState, MusicRepeatMode, SleepTimerOption, playerProvider;
 import '../../providers/favorites_provider.dart';
 import '../../widgets/album_art.dart';
 import 'queue_screen.dart';
@@ -143,7 +143,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       horizontal: AppSizes.paddingH),
                   child: _buildProgressBar(playerState),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
+
+                // 播放选项：速度 / 定时关闭
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: AppSizes.paddingH),
+                  child: _buildPlayerOptions(playerState),
+                ),
 
                 // 控制按钮
                 Padding(
@@ -568,6 +575,109 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
+  Widget _buildPlayerOptions(PlayerState state) {
+    final hasSleep = state.sleepTimerRemaining > Duration.zero;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        _OptionChip(
+          icon: Icons.speed_rounded,
+          label: '${_formatSpeed(state.speed)}x',
+          onTap: () => _showSpeedSheet(),
+        ),
+        const SizedBox(width: 12),
+        _OptionChip(
+          icon: hasSleep ? Icons.timer_off_rounded : Icons.timer_rounded,
+          label: hasSleep
+              ? SleepTimerOption.format(state.sleepTimerRemaining)
+              : '定时关闭',
+          highlight: hasSleep,
+          onTap: () => _showSleepTimerSheet(),
+        ),
+      ],
+    );
+  }
+
+  String _formatSpeed(double speed) {
+    return speed.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  }
+
+  void _showSpeedSheet() {
+    final notifier = ref.read(playerProvider.notifier);
+    final current = ref.read(playerProvider).speed;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _OptionSheet(
+        title: '播放速度',
+        children: [
+          for (final speed in [0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
+            ListTile(
+              dense: true,
+              title: Text(
+                '${_formatSpeed(speed)}x',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: (speed - current).abs() < 0.001
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                ),
+              ),
+              trailing: (speed - current).abs() < 0.001
+                  ? const Icon(Icons.check_rounded,
+                      color: AppColors.primary, size: 20)
+                  : null,
+              onTap: () {
+                Navigator.pop(context);
+                notifier.setSpeed(speed);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _showSleepTimerSheet() {
+    final notifier = ref.read(playerProvider.notifier);
+    final active = ref.read(playerProvider).sleepTimerRemaining;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _OptionSheet(
+        title: '定时关闭',
+        children: [
+          for (final option in SleepTimerOption.options)
+            ListTile(
+              dense: true,
+              title: Text(
+                option.label,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                notifier.setSleepTimer(option.duration);
+              },
+            ),
+          if (active > Duration.zero)
+            ListTile(
+              dense: true,
+              title: const Text(
+                '取消定时',
+                style: TextStyle(fontSize: 15, color: AppColors.error),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                notifier.setSleepTimer(null);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildControls(PlayerState state) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -625,8 +735,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  Widget _buildBottomActions(bool isFavorited, PlayerState playerState) {
-    return Row(
+  Widget _buildBottomActions(bool isFavorited, PlayerState playerState) {    return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         IconButton(
@@ -721,6 +830,104 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 播放器小选项按钮（速度 / 定时关闭）
+class _OptionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool highlight;
+
+  const _OptionChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.highlight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: GlassPanel(
+        blur: 10,
+        borderRadius: 16,
+        tintColor: highlight
+            ? AppColors.primary.withValues(alpha: 0.3)
+            : AppColors.surfaceLight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: highlight ? AppColors.primary : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: highlight ? AppColors.primary : AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 通用底部选项面板
+class _OptionSheet extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const _OptionSheet({required this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return GlassPanel(
+      blur: 20,
+      borderRadius: 20,
+      tintColor: AppColors.surfaceDark,
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textTertiary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            ...children,
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

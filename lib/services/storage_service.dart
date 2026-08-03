@@ -41,6 +41,12 @@ class StorageService {
   Future<void> removeSongFromPlaylist(String playlistId, Song song) =>
       _db.removeSongFromPlaylist(playlistId, song);
 
+  // ── 设置 ──
+
+  Future<String?> getSetting(String key) => _db.getSetting(key);
+  Future<void> setSetting(String key, String value) =>
+      _db.setSetting(key, value);
+
   // ── 本地文件 ──
 
   Future<List<Song>> loadLocalFiles() => _db.loadLocalFiles();

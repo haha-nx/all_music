@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -7,9 +9,36 @@ import '../music_source/core/track_adapter.dart';
 import '../services/audio_handler.dart';
 import 'source_provider.dart';
 import 'favorites_provider.dart';
+import 'settings_provider.dart';
 
 /// 播放模式
 enum MusicRepeatMode { off, all, one }
+
+/// 定时关闭选项
+class SleepTimerOption {
+  final String label;
+  final Duration duration;
+
+  const SleepTimerOption(this.label, this.duration);
+
+  static const List<SleepTimerOption> options = [
+    SleepTimerOption('15 分钟', Duration(minutes: 15)),
+    SleepTimerOption('30 分钟', Duration(minutes: 30)),
+    SleepTimerOption('45 分钟', Duration(minutes: 45)),
+    SleepTimerOption('60 分钟', Duration(minutes: 60)),
+    SleepTimerOption('90 分钟', Duration(minutes: 90)),
+  ];
+
+  /// 根据剩余时间格式化为倒计时文本
+  static String format(Duration remaining) {
+    if (remaining <= Duration.zero) return '';
+    final h = remaining.inHours;
+    final m = remaining.inMinutes % 60;
+    final s = remaining.inSeconds % 60;
+    if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+}
 
 /// 播放器状态
 class PlayerState {
@@ -27,6 +56,12 @@ class PlayerState {
   /// 播放错误消息（非 null 时表示播放失败，应显示给用户）
   final String? playbackError;
 
+  /// 播放速度（0.5 ~ 2.0）
+  final double speed;
+
+  /// 定时关闭剩余时间（Duration.zero 表示未开启）
+  final Duration sleepTimerRemaining;
+
   const PlayerState({
     this.currentSong,
     this.queue = const [],
@@ -40,6 +75,8 @@ class PlayerState {
     this.currentLyricIndex = 0,
     this.showLyrics = false,
     this.playbackError,
+    this.speed = 1.0,
+    this.sleepTimerRemaining = Duration.zero,
   });
 
   PlayerState copyWith({
@@ -56,6 +93,8 @@ class PlayerState {
     bool? showLyrics,
     String? playbackError,
     bool clearError = false,
+    double? speed,
+    Duration? sleepTimerRemaining,
   }) {
     return PlayerState(
       currentSong: currentSong ?? this.currentSong,
@@ -70,6 +109,8 @@ class PlayerState {
       currentLyricIndex: currentLyricIndex ?? this.currentLyricIndex,
       showLyrics: showLyrics ?? this.showLyrics,
       playbackError: clearError ? null : (playbackError ?? this.playbackError),
+      speed: speed ?? this.speed,
+      sleepTimerRemaining: sleepTimerRemaining ?? this.sleepTimerRemaining,
     );
   }
 }
@@ -83,6 +124,9 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   /// Fisher-Yates 随机播放索引序列
   List<int> _shuffleOrder = [];
   int _shufflePosition = 0;
+
+  /// 定时关闭计时器
+  Timer? _sleepTimer;
 
   PlayerNotifier(this._ref, this._audioPlayer, this._audioHandler)
       : super(const PlayerState()) {
@@ -157,11 +201,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (song == null) return;
 
     try {
-      final bridge = await _ref.read(sourceProvider.notifier).getEngine(song.sourceId ?? '');
-      if (bridge == null) return;
+      final backend = await _ref.read(sourceProvider.notifier).getBackend(song.sourceId ?? '');
+      if (backend == null) return;
 
       final track = TrackAdapter.fromLegacySong(song);
-      final lrc = await bridge.getLyric(track);
+      final lrc = await backend.getLyric(track);
       if (lrc != null && lrc.isNotEmpty && mounted) {
         final lyric = Lyric.fromLrc(lrc, songId: song.id);
         state = state.copyWith(
@@ -245,6 +289,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       final sourceNotifier = _ref.read(sourceProvider.notifier);
       final track = TrackAdapter.fromLegacySong(song);
+      // 使用设置中的默认音质
+      final quality = _ref.read(settingsProvider).defaultQuality;
 
       // 构建尝试顺序：原始源 → 其他已启用源
       final tryOrder = <String>[];
@@ -258,11 +304,11 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         if (!triedIds.add(sourceId)) continue;
 
         try {
-          final bridge = await sourceNotifier.getEngine(sourceId);
+          final bridge = await sourceNotifier.getBackend(sourceId);
           if (bridge == null) continue;
 
           // 如果音源有多个子源key，尝试匹配
-          final result = await bridge.getMusicUrl(track);
+          final result = await bridge.getMusicUrl(track, quality: quality);
           if (result != null && result.isNotEmpty) {
             url = result;
             break;
@@ -479,8 +525,38 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     state = state.copyWith(repeatMode: modes[nextIndex]);
   }
 
+  /// 设置定时关闭（null 或 Duration.zero 取消）
+  void setSleepTimer(Duration? duration) {
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    if (duration == null || duration <= Duration.zero) {
+      state = state.copyWith(sleepTimerRemaining: Duration.zero);
+      return;
+    }
+    state = state.copyWith(sleepTimerRemaining: duration);
+    _sleepTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      final remaining = state.sleepTimerRemaining - const Duration(seconds: 1);
+      if (remaining <= Duration.zero) {
+        timer.cancel();
+        _sleepTimer = null;
+        state = state.copyWith(sleepTimerRemaining: Duration.zero);
+        _audioPlayer.pause();
+        return;
+      }
+      state = state.copyWith(sleepTimerRemaining: remaining);
+    });
+  }
+
+  /// 设置播放速度（0.5x ~ 2.0x）
+  Future<void> setSpeed(double speed) async {
+    final s = speed.clamp(0.5, 2.0);
+    await _audioPlayer.setSpeed(s);
+    state = state.copyWith(speed: s);
+  }
+
   @override
   void dispose() {
+    _sleepTimer?.cancel();
     _audioHandler.onSkipToNext = null;
     _audioHandler.onSkipToPrevious = null;
     _audioPlayer.dispose();

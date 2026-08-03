@@ -11,6 +11,10 @@ import 'screens/favorites/favorites_screen.dart';
 import 'screens/playlist/playlist_screen.dart';
 import 'music_source/screens/source_hub_screen.dart';
 import 'music_source/screens/source_test_screen.dart';
+import 'music_source/screens/list_screen.dart';
+import 'music_source/screens/list_detail_screen.dart';
+import 'music_source/screens/downloads_screen.dart';
+import 'music_source/models/music_list.dart';
 import 'widgets/liquid_bottom_bar.dart';
 
 class MusicApp extends StatelessWidget {
@@ -121,6 +125,26 @@ final GoRouter _router = GoRouter(
     GoRoute(
       path: '/source-test',
       pageBuilder: (_, _) => _SlideRightTransition(child: const SourceTestScreen()),
+    ),
+    GoRoute(
+      path: '/downloads',
+      pageBuilder: (_, _) =>
+          _SlideRightTransition(child: const DownloadsScreen()),
+    ),
+    GoRoute(
+      path: '/lists',
+      pageBuilder: (_, _) => _SlideRightTransition(child: const ListScreen()),
+    ),
+    GoRoute(
+      path: '/list-detail',
+      pageBuilder: (_, state) {
+        final info = state.extra as MusicListInfo?;
+        return _SlideRightTransition(
+          child: info != null
+              ? ListDetailScreen(listInfo: info)
+              : const ListScreen(),
+        );
+      },
     ),
   ],
 );

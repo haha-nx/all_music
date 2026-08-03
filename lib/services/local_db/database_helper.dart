@@ -8,7 +8,7 @@ import '../../models/source_type.dart';
 /// SQLite 数据库助手 — 单例，管理所有本地数据持久化
 class DatabaseHelper {
   static const _dbName = 'all_music.db';
-  static const _dbVersion = 4;
+  static const _dbVersion = 5;
 
   DatabaseHelper._();
   static final DatabaseHelper instance = DatabaseHelper._();
@@ -155,9 +155,27 @@ class DatabaseHelper {
         );
       }
     }
+
+    if (oldVersion < 5) {
+      // v5: 新增设置表（默认音质等）
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    }
   }
 
   Future<void> _createTables(Database db, int version) async {
+    // 设置表（键值对）
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
+
     // 音源表（v3：只支持脚本源）
     await db.execute('''
       CREATE TABLE music_sources (
@@ -278,6 +296,31 @@ class DatabaseHelper {
   }
 
   // ══════════════════════════════════════════════
+  // 设置 CRUD（键值对）
+  // ══════════════════════════════════════════════
+
+  Future<String?> getSetting(String key) async {
+    final db = await database;
+    final rows = await db.query(
+      'settings',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first['value'] as String?;
+  }
+
+  Future<void> setSetting(String key, String value) async {
+    final db = await database;
+    await db.insert(
+      'settings',
+      {'key': key, 'value': value},
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  // ══════════════════════════════════════════════
   // 音源 CRUD
   // ══════════════════════════════════════════════
 
@@ -291,8 +334,20 @@ class DatabaseHelper {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete('music_sources');
+      // 防御性去重：按 id 保留最后一个，避免出现重复主键导致写入崩溃
+      final seen = <String>{};
+      final unique = <MusicSource>[];
       for (final s in sources) {
-        await txn.insert('music_sources', s.toMap());
+        if (seen.contains(s.id)) continue;
+        seen.add(s.id);
+        unique.add(s);
+      }
+      for (final s in unique) {
+        await txn.insert(
+          'music_sources',
+          s.toMap(),
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
       }
     });
   }

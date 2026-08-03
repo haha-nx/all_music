@@ -2,22 +2,25 @@
 ///
 /// 提供 QuickJS 中运行 LX Music 源脚本所需的一切：
 /// - Web API polyfills (atob, btoa, TextEncoder, etc.)
-/// - CryptoJS 兼容层 (MD5)
-/// - globalThis.lx API (send/on/request/utils)
+/// - CryptoJS（从 assets 加载真实库 —— 供音源做 AES/RSA 签名，如网易云 weapi）
+/// - globalThis.lx API (send/on/request/sourceRegister/utils)
 /// - httpFetch 桥接（JS → Dart Dio）
 ///
-/// 这是一个纯 JS 字符串构建器，不包含任何业务逻辑。
+/// 这是一个 JS 字符串构建器，不包含任何业务逻辑。
+import 'package:flutter/services.dart' show rootBundle;
+
 class LxRuntime {
   LxRuntime._();
 
-  /// 构建完整的 JS 运行时注入脚本
+  /// 构建完整的 JS 运行时注入脚本（需异步加载 CryptoJS 资源）
   ///
-  /// 包含所有 polyfills 和 lx API。
-  /// 此脚本在用户源脚本之前执行。
-  static String build() {
+  /// 执行顺序：polyfills → CryptoJS（真实库）→ normalize → lx API → httpFetch ...
+  static Future<String> build() async {
+    final cryptoJs = await rootBundle.loadString('assets/scripts/crypto-js.js');
     return [
       _polyfills,
-      _cryptoJs,
+      cryptoJs,
+      _normalizeCryptoJs,
       _lxApi,
       _httpFetch,
       _console,
@@ -28,7 +31,7 @@ class LxRuntime {
 
   // ═══════════════════════════════════════════
   // Polyfills
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _polyfills = r'''
 // ── Web API polyfills ──
@@ -112,81 +115,38 @@ if (typeof TextEncoder === 'undefined') {
   };
 }
 
-// Promise
 if (typeof Promise === 'undefined')
   globalThis.Promise = function(fn) { fn(function() {}, function() {}); };
 ''';
 
   // ═══════════════════════════════════════════
-  // CryptoJS
-  // ═══════════════════════════════════════════
+  // CryptoJS normalize
+  // ═════════════════════════════════════════
 
-  static const String _cryptoJs = r'''
-// ── CryptoJS 兼容层 ──
-if (typeof CryptoJS === 'undefined') {
-  globalThis.CryptoJS = (function() {
-    function md5_ff(a,b,c,d,x,s,t){const n=a+(b&c|~b&d)+x+t;return((n<<s)|(n>>>(32-s)))+b}
-    function md5_gg(a,b,c,d,x,s,t){const n=a+(b&d|c&~d)+x+t;return((n<<s)|(n>>>(32-s)))+b}
-    function md5_hh(a,b,c,d,x,s,t){const n=a+(b^c^d)+x+t;return((n<<s)|(n>>>(32-s)))+b}
-    function md5_ii(a,b,c,d,x,s,t){const n=a+(c^(b|~d))+x+t;return((n<<s)|(n>>>(32-s)))+b}
-    function toHex(n){let s='';for(let i=0;i<4;i++)s+=('0'+((n>>>(i*8))&0xff).toString(16)).slice(-2);return s}
-    function md5(str){
-      const bytes=[];for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i)&0xff);
-      const blen=bytes.length;bytes.push(0x80);while(bytes.length%64!==56)bytes.push(0);
-      const bitLen=blen*8;for(let i=0;i<8;i++)bytes.push((bitLen>>>(i*8))&0xff);
-      let a=0x67452301,b=0xefcdab89,c=0x98badcfe,d=0x10325476;
-      for(let bi=0;bi<bytes.length;bi+=64){
-        const M=[];for(let j=0;j<16;j++)M[j]=bytes[bi+j*4]|(bytes[bi+j*4+1]<<8)|(bytes[bi+j*4+2]<<16)|(bytes[bi+j*4+3]<<24);
-        let aa=a,bb=b,cc=c,dd=d;
-        a=md5_ff(a,b,c,d,M[0],7,0xd76aa478);d=md5_ff(d,a,b,c,M[1],12,0xe8c7b756);c=md5_ff(c,d,a,b,M[2],17,0x242070db);b=md5_ff(b,c,d,a,M[3],22,0xc1bdceee);
-        a=md5_ff(a,b,c,d,M[4],7,0xf57c0faf);d=md5_ff(d,a,b,c,M[5],12,0x4787c62a);c=md5_ff(c,d,a,b,M[6],17,0xa8304613);b=md5_ff(b,c,d,a,M[7],22,0xfd469501);
-        a=md5_ff(a,b,c,d,M[8],7,0x698098d8);d=md5_ff(d,a,b,c,M[9],12,0x8b44f7af);c=md5_ff(c,d,a,b,M[10],17,0xffff5bb1);b=md5_ff(b,c,d,a,M[11],22,0x895cd7be);
-        a=md5_ff(a,b,c,d,M[12],7,0x6b901122);d=md5_ff(d,a,b,c,M[13],12,0xfd987193);c=md5_ff(c,d,a,b,M[14],17,0xa679438e);b=md5_ff(b,c,d,a,M[15],22,0x49b40821);
-        a=md5_gg(a,b,c,d,M[1],5,0xf61e2562);d=md5_gg(d,a,b,c,M[6],9,0xc040b340);c=md5_gg(c,d,a,b,M[11],14,0x265e5a51);b=md5_gg(b,c,d,a,M[0],20,0xe9b6c7aa);
-        a=md5_gg(a,b,c,d,M[5],5,0xd62f105d);d=md5_gg(d,a,b,c,M[10],9,0x2441453);c=md5_gg(c,d,a,b,M[15],14,0xd8a1e681);b=md5_gg(b,c,d,a,M[4],20,0xe7d3fbc8);
-        a=md5_gg(a,b,c,d,M[9],5,0x21e1cde6);d=md5_gg(d,a,b,c,M[14],9,0xc33707d6);c=md5_gg(c,d,a,b,M[3],14,0xf4d50d87);b=md5_gg(b,c,d,a,M[8],20,0x455a14ed);
-        a=md5_gg(a,b,c,d,M[13],5,0xa9e3e905);d=md5_gg(d,a,b,c,M[2],9,0xfcefa3f8);c=md5_gg(c,d,a,b,M[7],14,0x676f02d9);b=md5_gg(b,c,d,a,M[12],20,0x8d2a4c8a);
-        a=md5_hh(a,b,c,d,M[5],4,0xfffa3942);d=md5_hh(d,a,b,c,M[8],11,0x8771f681);c=md5_hh(c,d,a,b,M[11],16,0x6d9d6122);b=md5_hh(b,c,d,a,M[14],23,0xfde5380c);
-        a=md5_hh(a,b,c,d,M[1],4,0xa4beea44);d=md5_hh(d,a,b,c,M[4],11,0x4bdecfa9);c=md5_hh(c,d,a,b,M[7],16,0xf6bb4b60);b=md5_hh(b,c,d,a,M[10],23,0xbebfbc70);
-        a=md5_hh(a,b,c,d,M[13],4,0x289b7ec6);d=md5_hh(d,a,b,c,M[0],11,0xeaa127fa);c=md5_hh(c,d,a,b,M[3],16,0xd4ef3085);b=md5_hh(b,c,d,a,M[6],23,0x4881d05);
-        a=md5_hh(a,b,c,d,M[9],4,0xd9d4d039);d=md5_hh(d,a,b,c,M[12],11,0xe6db99e5);c=md5_hh(c,d,a,b,M[15],16,0x1fa27cf8);b=md5_hh(b,c,d,a,M[2],23,0xc4ac5665);
-        a=md5_ii(a,b,c,d,M[0],6,0xf4292244);d=md5_ii(d,a,b,c,M[7],10,0x432aff97);c=md5_ii(c,d,a,b,M[14],15,0xab9423a7);b=md5_ii(b,c,d,a,M[5],21,0xfc93a039);
-        a=md5_ii(a,b,c,d,M[12],6,0x655b59c3);d=md5_ii(d,a,b,c,M[3],10,0x8f0ccc92);c=md5_ii(c,d,a,b,M[10],15,0xffeff47d);b=md5_ii(b,c,d,a,M[1],21,0x85845dd1);
-        a=md5_ii(a,b,c,d,M[8],6,0x6fa87e4f);d=md5_ii(d,a,b,c,M[15],10,0xfe2ce6e0);c=md5_ii(c,d,a,b,M[6],15,0xa3014314);b=md5_ii(b,c,d,a,M[13],21,0x4e0811a1);
-        a=md5_ii(a,b,c,d,M[4],6,0xf7537e82);d=md5_ii(d,a,b,c,M[11],10,0xbd3af235);c=md5_ii(c,d,a,b,M[2],15,0x2ad7d2bb);b=md5_ii(b,c,d,a,M[9],21,0xeb86d391);
-        a=(a+aa)>>>0;b=(b+bb)>>>0;c=(c+cc)>>>0;d=(d+dd)>>>0;
-      }
-      return toHex(a)+toHex(b)+toHex(c)+toHex(d);
-    }
-    function wordArrayFromUtf8(str){
-      const wa=[],fn={sigBytes:str.length,toString:function(){let s='';for(let i=0;i<wa.length;i++)s+=toHex(wa[i]);return s}};
-      fn.words=[];for(let i=0;i<str.length;i+=4){let w=0;for(let j=0;j<4&&i+j<str.length;j++)w|=(str.charCodeAt(i+j)&0xff)<<(j*8);fn.words.push(w>>>0)}
-      return fn;
-    }
-    var _encUtf8={parse:function(s){return wordArrayFromUtf8(String(s))},stringify:function(wa){let s='';for(let i=0;i<wa.words.length;i++){var w=wa.words[i];s+=String.fromCharCode(w&0xff,(w>>8)&0xff,(w>>16)&0xff,(w>>24)&0xff)}return s.replace(/\0+$/,'')}};
-    return {
-      MD5:function(msg){return{toString:function(){return md5(String(msg))}}},
-      enc:{Utf8:_encUtf8,Base64:{stringify:function(wa){return globalThis.btoa(_encUtf8.stringify(wa))}}},
-      lib:{WordArray:{create:function(str){return _encUtf8.parse(str)}}},
-      algo:{MD5:{create:function(){return{update:function(){},finalize:function(msg){return{toString:function(){return md5(String(msg))}}}}}}},
-      AES:{encrypt:function(msg,key,cfg){return{toString:function(){return''}}},decrypt:function(cipher,key,cfg){return{toString:_encUtf8,words:[]}}},
-      mode:{ECB:0},pad:{Pkcs7:0}
-    };
-  })();
+  /// CryptoJS 是 UMD 包：在定义了 module/exports 的环境（如 QuickJS polyfill）里
+  /// 会走 CommonJS 分支，把库挂到 module.exports 而非全局。这里归位到 globalThis.CryptoJS。
+  static const String _normalizeCryptoJs = r'''
+if (typeof globalThis.CryptoJS === 'undefined') {
+  globalThis.CryptoJS = (typeof module !== 'undefined' && module.exports)
+    ? module.exports
+    : (typeof CryptoJS !== 'undefined' ? CryptoJS : {});
 }
-if (typeof md5 === 'undefined') globalThis.md5 = function(msg) { return CryptoJS.MD5(String(msg)).toString(); };
-if (typeof MD5 === 'undefined') globalThis.MD5 = globalThis.md5;
+// crypto-js 的 UMD 把库挂到了 module.exports。若不重置，后续源脚本若也用
+// module.exports 导出（如标准 LX 源 await 写法），会被误判为「音源导出对象」。
+// 这里在已捕获 CryptoJS 到 globalThis 后，把 module/exports 还原为空对象。
+if (typeof globalThis.module !== 'undefined') globalThis.module = { exports: {} };
+if (typeof globalThis.exports !== 'undefined') globalThis.exports = globalThis.module.exports;
 ''';
 
   // ═══════════════════════════════════════════
   // LX Music API
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _lxApi = r'''
 // ── globalThis.lx — LX Music 源脚本桥接 API ──
 
-// 内部状态
 var __requestHandlers = {};
+var __lxSources = {};
 var __initialized = false;
 
 function __sendInited(data) {
@@ -202,77 +162,106 @@ if (typeof globalThis.lx === 'undefined') {
       request: 'request',
       updateAlert: 'updateAlert',
     },
-    version: '2.0',
+    version: '2.0.0',
     env: 'mobile',
     currentScriptInfo: {},
+    sources: {},
 
-    // lx.send(eventName, data) — 脚本主动通知 App
+    // 兼容双签名：lx.send(eventName, data) 或 lx.send({ type/log/... })
     send: function(eventName, data) {
-      if (eventName === globalThis.lx.EVENT_NAMES.inited) {
-        __initialized = true;
+      var ev, dt;
+      if (eventName !== null && typeof eventName === 'object') {
+        ev = eventName.type || eventName.event || (eventName.log ? 'log' : 'object');
+        dt = eventName;
+      } else {
+        ev = eventName; dt = data;
       }
-      sendMessage('lx', JSON.stringify({ type: 'send', event: eventName, data: data }));
+      sendMessage('lx', JSON.stringify({ type: 'send', event: ev, data: dt }));
     },
 
-    // lx.on(eventName, handler) — 注册事件处理器
     on: function(eventName, handler) {
       if (eventName === globalThis.lx.EVENT_NAMES.request) {
         __requestHandlers['_global'] = handler;
       }
     },
 
-    // lx.request(url, options, callback) — HTTP 请求
-    request: function(url, options, callback) {
+    // lx.request(url, options) — HTTP 请求，返回 Promise<{statusCode,headers,body}>
+    request: function(url, options) {
       var opts = options || {};
       if (typeof url === 'object') { opts = url; url = opts.url || ''; }
       var method = opts.method || 'GET';
       var headers = opts.headers || {};
       var body = opts.body || opts.data || null;
 
-      // 展开数组值headers
       for (var k in headers) {
         if (Array.isArray(headers[k])) headers[k] = headers[k].join(', ');
       }
 
-      var promise = new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject) {
         httpFetch(url, { method: method, headers: headers, body: body })
           .then(function(result) {
-            var err = result.statusCode < 0 ? result.statusMessage : null;
             var rawBody = result.body || '';
             var parsedBody = rawBody;
             if (typeof rawBody === 'string' && rawBody.length > 0) {
-              try { parsedBody = JSON.parse(rawBody); } catch(e) {}
+              try { parsedBody = JSON.parse(rawBody); } catch (e) {}
             }
-            var resp = { statusCode: result.statusCode, headers: result.headers || {}, body: parsedBody };
-            resolve(resp);
-            if (callback) { try { callback(err, resp); } catch(e) {} }
+            resolve({ statusCode: result.statusCode, headers: result.headers || {}, body: parsedBody });
+            // callback 兼容（旧风格）
+            var cb = opts.callback;
+            if (typeof cb === 'function') {
+              try { cb(result.statusCode < 0 ? result.statusMessage : null, { statusCode: result.statusCode, body: parsedBody }); } catch (e) {}
+            }
           })
-          .catch(function(e) {
-            reject(e);
-            if (callback) { try { callback(e, null); } catch(err) {} }
-          });
+          .catch(function(e) { reject(e); });
       });
-
-      return function() {}; // cancel stub
     },
 
-    // lx.utils — 工具函数
+    // 标准 LX 音源注册入口（新版契约）
+    sourceRegister: function(source) {
+      if (!source) return;
+      __lxSources[source.name] = source;
+      var actions = [];
+      if (source.music) {
+        if (typeof source.music.search === 'function') actions.push('search');
+        if (typeof source.music.musicUrl === 'function') actions.push('musicUrl');
+        if (typeof source.music.lyric === 'function') actions.push('lyric');
+        if (typeof source.music.getMusicInfo === 'function') actions.push('getMusicInfo');
+        if (typeof source.music.list === 'function') actions.push('list');
+        if (typeof source.music.listDetail === 'function') actions.push('listDetail');
+        if (typeof source.music.importList === 'function') actions.push('importList');
+      }
+      sendMessage('lx', JSON.stringify({
+        type: 'sourceRegister',
+        data: {
+          name: source.name,
+          type: source.type || 'music',
+          actions: actions,
+          hasMusic: !!source.music,
+          listTypes: (source.listTypes || []).map(function(t) {
+            return typeof t === 'string' ? { name: t, type: t } : { name: t.name, type: t.type };
+          }),
+        },
+      }));
+    },
+
     utils: {
       atob: function(s) { return globalThis.atob ? globalThis.atob(s) : s; },
       btoa: function(s) { return globalThis.btoa ? globalThis.btoa(s) : s; },
       crypto: {
-        md5: function(str) { return md5(String(str)); },
+        md5: function(str) {
+          return (typeof CryptoJS !== 'undefined' && CryptoJS.MD5)
+            ? CryptoJS.MD5(String(str)).toString()
+            : String(str);
+        },
       },
     },
-
-    sources: {},
   };
 }
 ''';
 
   // ═══════════════════════════════════════════
   // httpFetch bridge
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _httpFetch = r'''
 // ── httpFetch — JS → Dart HTTP 桥接 ──
@@ -312,7 +301,7 @@ globalThis.httpFetch = async function(url, options) {
 
   // ═══════════════════════════════════════════
   // Console
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _console = r'''
 // ── console — 转发到 Dart ──
@@ -337,7 +326,7 @@ if (typeof console === 'undefined') {
 
   // ═══════════════════════════════════════════
   // Fetch polyfill
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _fetchPolyfill = r'''
 // ── fetch API polyfill ──
@@ -367,7 +356,7 @@ if (typeof fetch === 'undefined') {
 
   // ═══════════════════════════════════════════
   // URL polyfill
-  // ═══════════════════════════════════════════
+  // ═════════════════════════════════════════
 
   static const String _urlPolyfill = r'''
 // ── URL polyfill ──
