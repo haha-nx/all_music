@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/song.dart';
 import '../music_source/core/track_adapter.dart';
 import '../music_source/models/music_track.dart';
+import '../music_source/providers/music_source_provider.dart';
 import '../music_source/services/search_aggregator.dart';
-import 'source_provider.dart';
 
 /// 搜索状态
 class SearchState {
@@ -88,7 +88,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
     state = state.copyWith(isLoading: true, error: null, failedSources: []);
 
     try {
-      final sourceNotifier = ref.read(sourceProvider.notifier);
+      final sourceNotifier = ref.read(sourceListProvider.notifier);
 
       // 检查引擎就绪状态
       if (!sourceNotifier.isEngineReady) {

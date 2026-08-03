@@ -6,7 +6,6 @@ import '../providers/favorites_provider.dart';
 import '../providers/player_provider.dart';
 import '../providers/playlist_provider.dart';
 import '../providers/settings_provider.dart';
-import '../providers/source_provider.dart';
 import '../music_source/core/track_adapter.dart';
 import '../music_source/providers/music_source_provider.dart';
 import 'album_art.dart';
@@ -172,7 +171,7 @@ class SongContextMenu extends ConsumerWidget {
 
     try {
       final backend =
-          await ref.read(sourceProvider.notifier).getBackend(song.sourceId!);
+          await ref.read(sourceListProvider.notifier).getBackend(song.sourceId!);
       if (backend == null) throw Exception('音源不可用');
 
       final track = TrackAdapter.fromLegacySong(song);

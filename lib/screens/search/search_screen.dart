@@ -7,8 +7,8 @@ import '../../config/constants.dart';
 import '../../models/song.dart';
 import '../../providers/player_provider.dart';
 import '../../providers/search_provider.dart';
-import '../../providers/source_provider.dart';
 import '../../music_source/models/music_track.dart';
+import '../../music_source/providers/music_source_provider.dart';
 import '../../widgets/album_art.dart';
 import '../../widgets/song_context_menu.dart';
 
@@ -34,9 +34,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final searchState = ref.watch(searchProvider);
-    final sources = ref.watch(sourceProvider);
+    final sources = ref.watch(sourceListProvider);
     final playerState = ref.watch(playerProvider);
-    final sourceNotifier = ref.read(sourceProvider.notifier);
+    final sourceNotifier = ref.read(sourceListProvider.notifier);
     final engineReady = sourceNotifier.isEngineReady;
     final engineLoading = sourceNotifier.readyState == SourceReadyState.loading;
     final engineError = sourceNotifier.readyError;

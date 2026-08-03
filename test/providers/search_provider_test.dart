@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:all_music/providers/search_provider.dart';
-import 'package:all_music/providers/source_provider.dart';
-import 'package:all_music/models/music_source.dart';
+import 'package:all_music/music_source/models/source_definition.dart';
+import 'package:all_music/music_source/providers/music_source_provider.dart';
 
 void main() {
   group('SearchState', () {
@@ -71,7 +71,8 @@ void main() {
     test('search sets hasSearched to true on empty sources', () async {
       final container = ProviderContainer(
         overrides: [
-          sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = []),
+          sourceListProvider.overrideWith(
+              (ref) => SourceListNotifier(Dio())..state = []),
           searchProvider.overrideWith((ref) => SearchNotifier(ref)),
         ],
       );
@@ -87,8 +88,8 @@ void main() {
     test('search with only disabled sources', () async {
       final container = ProviderContainer(
         overrides: [
-          sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = [
-            MusicSource(
+          sourceListProvider.overrideWith((ref) => SourceListNotifier(Dio())..state = [
+            SourceDefinition(
               id: 's1',
               name: 'Disabled',
               scriptSource: '',

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:all_music/app.dart';
 import 'package:all_music/providers/favorites_provider.dart';
-import 'package:all_music/providers/source_provider.dart';
+import 'package:all_music/music_source/providers/music_source_provider.dart';
 import 'package:all_music/providers/playlist_provider.dart';
 
 void main() {
@@ -12,7 +12,7 @@ void main() {
       ProviderScope(
         overrides: [
           favoritesProvider.overrideWith((ref) => FavoritesNotifier()..state = const FavoritesState()),
-          sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = []),
+          sourceListProvider.overrideWith((ref) => SourceListNotifier(Dio())..state = []),
           playlistProvider.overrideWith((ref) => PlaylistNotifier()..state = []),
         ],
         child: const MusicApp(),
@@ -30,7 +30,7 @@ void main() {
       ProviderScope(
         overrides: [
           favoritesProvider.overrideWith((ref) => FavoritesNotifier()..state = const FavoritesState()),
-          sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = []),
+          sourceListProvider.overrideWith((ref) => SourceListNotifier(Dio())..state = []),
           playlistProvider.overrideWith((ref) => PlaylistNotifier()..state = []),
         ],
         child: const MusicApp(),

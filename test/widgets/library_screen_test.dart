@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:all_music/screens/library/library_screen.dart';
 import 'package:all_music/providers/favorites_provider.dart';
-import 'package:all_music/providers/source_provider.dart';
+import 'package:all_music/music_source/providers/music_source_provider.dart';
 import 'package:all_music/providers/playlist_provider.dart';
 
 /// Helper to wrap a widget with overridden Riverpod providers
@@ -14,7 +14,7 @@ Widget _testableWidget(Widget child, {
   return ProviderScope(
     overrides: [
       favoritesProvider.overrideWith((ref) => FavoritesNotifier()..state = const FavoritesState()),
-      sourceProvider.overrideWith((ref) => SourceNotifier(Dio())..state = []),
+      sourceListProvider.overrideWith((ref) => SourceListNotifier(Dio())..state = []),
       playlistProvider.overrideWith((ref) => PlaylistNotifier()..state = []),
       ...extraOverrides,
     ],

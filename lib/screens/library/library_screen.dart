@@ -9,7 +9,7 @@ import '../../models/song.dart';
 import '../../providers/playlist_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/player_provider.dart';
-import '../../providers/source_provider.dart';
+import '../../music_source/providers/music_source_provider.dart';
 import '../../widgets/album_art.dart';
 
 /// 音乐库 — Apple Music 风格
@@ -42,7 +42,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final playlists = ref.watch(playlistProvider);
     final favoritesState = ref.watch(favoritesProvider);
-    final sources = ref.watch(sourceProvider);
+    final sources = ref.watch(sourceListProvider);
     final recentPlayed = favoritesState.recentlyPlayed;
     final favorites = favoritesState.favorites;
 

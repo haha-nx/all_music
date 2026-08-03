@@ -6,8 +6,8 @@ import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
 import '../models/lyric.dart';
 import '../music_source/core/track_adapter.dart';
+import '../music_source/providers/music_source_provider.dart';
 import '../services/audio_handler.dart';
-import 'source_provider.dart';
 import 'favorites_provider.dart';
 import 'settings_provider.dart';
 
@@ -201,7 +201,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (song == null) return;
 
     try {
-      final backend = await _ref.read(sourceProvider.notifier).getBackend(song.sourceId ?? '');
+      final backend = await _ref.read(sourceListProvider.notifier).getBackend(song.sourceId ?? '');
       if (backend == null) return;
 
       final track = TrackAdapter.fromLegacySong(song);
@@ -287,7 +287,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       String? url;
       String? lastError;
 
-      final sourceNotifier = _ref.read(sourceProvider.notifier);
+      final sourceNotifier = _ref.read(sourceListProvider.notifier);
       final track = TrackAdapter.fromLegacySong(song);
       // 使用设置中的默认音质
       final quality = _ref.read(settingsProvider).defaultQuality;

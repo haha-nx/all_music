@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/constants.dart';
 import '../../../models/song.dart';
 import '../../../providers/player_provider.dart';
-import '../../../providers/source_provider.dart';
 import '../../../widgets/album_art.dart';
 import '../../../widgets/glass_panel.dart';
 import '../../../widgets/song_context_menu.dart';
 import '../core/track_adapter.dart';
 import '../models/music_list.dart';
 import '../models/music_track.dart';
+import '../providers/music_source_provider.dart';
 
 /// 榜单详情 — 展示榜单歌曲列表（lx-music listDetail 动作）
 class ListDetailScreen extends ConsumerStatefulWidget {
@@ -33,7 +33,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Future<List<MusicTrack>> _loadDetail() async {
     final backend = await ref
-        .read(sourceProvider.notifier)
+        .read(sourceListProvider.notifier)
         .getBackend(widget.listInfo.sourceId);
     if (backend == null) return [];
     return backend.listDetail(widget.listInfo, limit: 50);

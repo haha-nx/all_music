@@ -8,7 +8,7 @@
 - 新模块采用分层架构：core → models → services → providers → screens
 - **关键设计**：`MusicBackend` 抽象接口屏蔽后端差异
   - `LxBridge` — 复杂 LX 脚本（需 JS 引擎）
-- **2026-08-03 起不再内置任何音源**：删除了 `netease_lx.js`/`qq_lx.js`/`kugou_lx.js` 脚本与 `NeteaseDirectBackend`，音源全部由用户导入（粘贴脚本或 URL）；启动时 `SourceNotifier._init` 会过滤掉旧数据库中的 `builtin_*` 记录
+- **2026-08-03 起不再内置任何音源**：删除了 `netease_lx.js`/`qq_lx.js`/`kugou_lx.js` 脚本与 `NeteaseDirectBackend`，音源全部由用户导入（粘贴脚本或 URL）；启动时 `SourceListNotifier._init` 会过滤掉旧数据库中的 `builtin_*` 记录
 
 ### 已知问题：JS 引擎 Android 兼容性（已修复）
 - ~~`flutter_js`~~ 在 Android 上需要 JavaScriptCore 的 `libjsc.so` 原生库 → **已替换为 `quickjs_engine`**
@@ -27,11 +27,12 @@
 - `TrackAdapter` — 新旧模型转换器
 - `MusicSource`（旧）— 仍作为 DB 持久化层，转换时填 `backendType`
 
-### 状态管理
+### 状态管理（2026-08-03 合并为单一音源体系）
 - Riverpod StateNotifierProvider
-- `sourceProvider`（主）— 管理音源列表 + 引擎预初始化
-- `sourceListProvider`（测试页）— 同上，独立实例
-- `searchProvider`（主）— 走 `getReadyBridges()` 跨源聚合
+- `sourceListProvider`（唯一音源数据源，新版）— `lib/music_source/providers/music_source_provider.dart` 的 `SourceListNotifier`，从数据库加载用户导入音源并持久化变更，搜索/播放/榜单/设置/音源中心共用
+- 旧 `lib/providers/source_provider.dart`（`sourceProvider`/`SourceNotifier`）已删除；`MusicSource` 仅作 DB DTO 保留（storage_service/database_helper 使用）
+- `lib/utils/http_client.dart`（MusicHttpClient）因无引用一并删除
+- `searchProvider`（主，`lib/providers/search_provider.dart`）— 走 `getReadyBridges()` 跨源聚合；music_source 里的重复 `searchProvider`/`SearchNotifier` 死代码已删除
 - `downloadProvider` — 下载任务管理
 
 ### 音源现状（2026-08-03 起）

@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../music_source/core/music_backend.dart';
 import '../music_source/models/music_list.dart';
-import 'source_provider.dart';
+import '../music_source/providers/music_source_provider.dart';
 
 /// 单个音源的榜单分组
 class SourceLists {
@@ -61,7 +61,7 @@ class ListsNotifier extends StateNotifier<ListsState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final sourceNotifier = ref.read(sourceProvider.notifier);
+      final sourceNotifier = ref.read(sourceListProvider.notifier);
       final bridges = await sourceNotifier.manager.getReadyListBridges();
 
       if (bridges.isEmpty) {
@@ -122,7 +122,7 @@ class ListsNotifier extends StateNotifier<ListsState> {
   }
 
   String _sourceName(MusicBackend bridge) {
-    final sources = ref.read(sourceProvider);
+    final sources = ref.read(sourceListProvider);
     for (final s in sources) {
       if (s.id == bridge.sourceId) return s.name;
     }
