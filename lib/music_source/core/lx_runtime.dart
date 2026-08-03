@@ -149,6 +149,72 @@ var __requestHandlers = {};
 var __lxSources = {};
 var __initialized = false;
 
+// 脚本头元信息（@name/@version/@description 等），由 Dart 侧在源脚本执行前注入
+var __scriptInfo = {};
+
+// ── 字节工具（utils.buffer 的辅助实现）──
+function __bytesToString(bytes, enc) {
+  enc = enc || 'utf8';
+  if (enc === 'base64') {
+    var bin = '';
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return (typeof btoa === 'function') ? btoa(bin) : bin;
+  }
+  if (enc === 'hex') {
+    var hex = '';
+    for (var i = 0; i < bytes.length; i++) {
+      var h = bytes[i].toString(16);
+      hex += (bytes[i] < 16 ? '0' : '') + h;
+    }
+    return hex;
+  }
+  var s = '';
+  for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return s;
+}
+
+function __stringToBytes(str, enc) {
+  enc = enc || 'utf8';
+  if (enc === 'base64') {
+    var bin = (typeof atob === 'function') ? atob(String(str)) : String(str);
+    var b1 = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) b1[i] = bin.charCodeAt(i) & 0xFF;
+    return b1;
+  }
+  if (enc === 'hex') {
+    var s = String(str);
+    var b2 = new Uint8Array(Math.floor(s.length / 2));
+    for (var j = 0; j < b2.length; j++) b2[j] = parseInt(s.substr(j * 2, 2), 16) & 0xFF;
+    return b2;
+  }
+  var b3 = new Uint8Array(String(str).length);
+  for (var k = 0; k < b3.length; k++) b3[k] = String(str).charCodeAt(k) & 0xFF;
+  return b3;
+}
+
+// BigInt 模幂（RSA 用）
+function __modPow(base, exp, mod) {
+  var result = 1n;
+  base = base % mod;
+  while (exp > 0n) {
+    if (exp & 1n) result = (result * base) % mod;
+    base = (base * base) % mod;
+    exp >>= 1n;
+  }
+  return result;
+}
+
+function __bigIntFromBytes(bytes) {
+  var hex = __bytesToString(bytes, 'hex');
+  return BigInt('0x' + (hex || '0'));
+}
+
+function __bytesFromBigInt(v, len) {
+  var hex = v.toString(16);
+  while (hex.length < len * 2) hex = '0' + hex;
+  return __stringToBytes(hex, 'hex');
+}
+
 function __sendInited(data) {
   if (__initialized) return;
   __initialized = true;
@@ -164,7 +230,7 @@ if (typeof globalThis.lx === 'undefined') {
     },
     version: '2.0.0',
     env: 'mobile',
-    currentScriptInfo: {},
+    currentScriptInfo: __scriptInfo,
     sources: {},
 
     // 兼容双签名：lx.send(eventName, data) 或 lx.send({ type/log/... })
@@ -201,15 +267,18 @@ if (typeof globalThis.lx === 'undefined') {
         httpFetch(url, { method: method, headers: headers, body: body })
           .then(function(result) {
             var rawBody = result.body || '';
-            var parsedBody = rawBody;
-            if (typeof rawBody === 'string' && rawBody.length > 0) {
-              try { parsedBody = JSON.parse(rawBody); } catch (e) {}
-            }
-            resolve({ statusCode: result.statusCode, headers: result.headers || {}, body: parsedBody });
+            // 注意：body 保持字符串（与官方 lx-music 一致），
+            // 由源脚本自行 JSON.parse。若这里解析成对象，脚本
+            // 按字符串处理（如 typeof 判断、正则、length）会出错。
+            resolve({
+              statusCode: result.statusCode,
+              headers: result.headers || {},
+              body: rawBody,
+            });
             // callback 兼容（旧风格）
             var cb = opts.callback;
             if (typeof cb === 'function') {
-              try { cb(result.statusCode < 0 ? result.statusMessage : null, { statusCode: result.statusCode, body: parsedBody }); } catch (e) {}
+              try { cb(result.statusCode < 0 ? result.statusMessage : null, { statusCode: result.statusCode, body: rawBody }); } catch (e) {}
             }
           })
           .catch(function(e) { reject(e); });
@@ -247,11 +316,121 @@ if (typeof globalThis.lx === 'undefined') {
     utils: {
       atob: function(s) { return globalThis.atob ? globalThis.atob(s) : s; },
       btoa: function(s) { return globalThis.btoa ? globalThis.btoa(s) : s; },
+
+      // 字节缓冲（lx 标准：utils.buffer.from / toBuffer / bufToString）
+      buffer: {
+        from: function(data, encoding) {
+          var bytes = (data instanceof Uint8Array)
+            ? data
+            : __stringToBytes(data, encoding);
+          bytes.toString = function(enc) { return __bytesToString(bytes, enc); };
+          return bytes;
+        },
+        toBuffer: function(data) {
+          if (data instanceof Uint8Array) {
+            data.toString = function(enc) { return __bytesToString(data, enc); };
+            return data;
+          }
+          return globalThis.lx.utils.buffer.from(data);
+        },
+        // 洛雪系源（六音等）依赖的扩展方法：字节 → 字符串
+        bufToString: function(buf, encoding) {
+          if (!buf) return '';
+          if (typeof buf.toString === 'function' && !(buf instanceof Uint8Array)) {
+            return buf.toString(encoding);
+          }
+          return __bytesToString(buf, encoding);
+        },
+      },
+
       crypto: {
         md5: function(str) {
           return (typeof CryptoJS !== 'undefined' && CryptoJS.MD5)
             ? CryptoJS.MD5(String(str)).toString()
             : String(str);
+        },
+
+        // AES 加密：key/iv 为 base64，返回 base64；有 iv 走 CBC，否则 ECB
+        aesEncrypt: function(str, key, iv) {
+          if (typeof CryptoJS === 'undefined' || !CryptoJS.AES) return '';
+          try {
+            var k = CryptoJS.enc.Base64.parse(key || '');
+            var opt = { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 };
+            if (iv) {
+              opt.iv = CryptoJS.enc.Base64.parse(iv);
+              opt.mode = CryptoJS.mode.CBC;
+            }
+            return CryptoJS.AES.encrypt(String(str), k, opt).toString();
+          } catch (e) { return ''; }
+        },
+
+        // AES 解密：key/iv 为 base64，密文为 base64，返回 utf8 明文
+        aesDecrypt: function(str, key, iv) {
+          if (typeof CryptoJS === 'undefined' || !CryptoJS.AES) return '';
+          try {
+            var k = CryptoJS.enc.Base64.parse(key || '');
+            var opt = { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 };
+            if (iv) {
+              opt.iv = CryptoJS.enc.Base64.parse(iv);
+              opt.mode = CryptoJS.mode.CBC;
+            }
+            return CryptoJS.AES.decrypt(String(str), k, opt)
+                .toString(CryptoJS.enc.Utf8);
+          } catch (e) { return ''; }
+        },
+
+        // RSA 加密（PKCS#1 v1.5）：modulus/exponent 为 base64，返回 base64
+        rsaEncrypt: function(str, modulus, exponent) {
+          try {
+            var nBytes = __stringToBytes(modulus, 'base64');
+            var eBytes = __stringToBytes(exponent, 'base64');
+            if (nBytes.length === 0 || eBytes.length === 0) return '';
+            var n = __bigIntFromBytes(nBytes);
+            var e = __bigIntFromBytes(eBytes);
+            var k = nBytes.length;
+
+            var msg = __stringToBytes(str, 'utf8');
+            if (msg.length > k - 11) return '';
+
+            // EB = 00 02 PS 00 M
+            var psLen = k - msg.length - 3;
+            var eb = new Uint8Array(k);
+            eb[0] = 0x00; eb[1] = 0x02;
+            for (var i = 0; i < psLen; i++) eb[2 + i] = 1 + Math.floor(Math.random() * 255);
+            eb[2 + psLen] = 0x00;
+            for (var j = 0; j < msg.length; j++) eb[3 + psLen + j] = msg[j];
+
+            var m = __bigIntFromBytes(eb);
+            var c = __modPow(m, e, n);
+            return __bytesToString(__bytesFromBigInt(c, k), 'base64');
+          } catch (e) { return ''; }
+        },
+
+        // RC4 加密：返回 hex
+        rc4: function(str, key) {
+          if (typeof CryptoJS === 'undefined' || !CryptoJS.RC4) return '';
+          try {
+            return CryptoJS.RC4.encrypt(String(str), String(key))
+                .ciphertext.toString(CryptoJS.enc.Hex);
+          } catch (e) { return ''; }
+        },
+
+        // 随机字节（len 字节，返回带 toString 的 Uint8Array）
+        randomBytes: function(len) {
+          var bytes = new Uint8Array(len);
+          for (var i = 0; i < len; i++) bytes[i] = Math.floor(Math.random() * 256);
+          bytes.toString = function(enc) { return __bytesToString(bytes, enc); };
+          return bytes;
+        },
+
+        // 随机 hex（len 字节）
+        getRandom: function(len) {
+          var hex = '';
+          for (var i = 0; i < len; i++) {
+            var b = Math.floor(Math.random() * 256).toString(16);
+            hex += (b.length < 2 ? '0' : '') + b;
+          }
+          return hex;
         },
       },
     },

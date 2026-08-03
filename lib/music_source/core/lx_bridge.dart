@@ -117,6 +117,19 @@ class LxBridge implements MusicBackend {
       }
       print('[LXBridge] 运行时环境注入成功');
 
+      // 1.5 注入脚本头元信息到 lx.currentScriptInfo
+      //    标准 LX 源脚本会读取 name/description/version 等做校验（如六音源）
+      final meta = SourceDefinition.parseMeta(_source.scriptSource);
+      if (meta.isNotEmpty) {
+        try {
+          final inject = jsonEncode(meta);
+          await _runtime!.evaluate(
+              'Object.assign(__scriptInfo, $inject); true');
+        } catch (e) {
+          print('[LXBridge] currentScriptInfo 注入失败: $e');
+        }
+      }
+
       // 2. 执行源脚本
       final script = _wrapScript(_source.scriptSource);
       print('[LXBridge] 开始执行脚本 ${_source.name} (${_source.scriptSource.length} 字节)...');
@@ -189,7 +202,11 @@ class LxBridge implements MusicBackend {
             headers: headers,
             responseType: ResponseType.plain,
             validateStatus: (_) => true,
-            receiveTimeout: const Duration(seconds: 30),
+            // 关键：脚本顶层常会 await httpFetch 检查更新/加载配置，
+            // 若请求无限挂起会导致引擎初始化超时。必须设置短超时快速失败。
+            connectTimeout: const Duration(seconds: 8),
+            receiveTimeout: const Duration(seconds: 10),
+            sendTimeout: const Duration(seconds: 10),
           ),
         );
 
