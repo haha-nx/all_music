@@ -62,14 +62,44 @@ if (typeof Buffer === 'undefined') {
     isBuffer: function() { return false; },
   };
 }
+// ── 真实异步定时器 ──
+// 与官方 lx-music-mobile 一致（原生定时器），避免同步假定时器导致的
+// 死循环（如混淆脚本的 setInterval 自检递归）与语义错误。
+var __timerSeq = 0;
+var __timerMap = {};
+function __scheduleTimer(id, ms, interval) {
+  try { sendMessage('timer', JSON.stringify({ id: id, ms: ms, interval: interval })); } catch (e) {}
+}
 if (typeof setTimeout === 'undefined') {
-  globalThis.setTimeout = function(fn, ms) { fn(); return 0; };
-  globalThis.clearTimeout = function() {};
+  globalThis.setTimeout = function(fn, ms) {
+    var id = ++__timerSeq;
+    __timerMap[id] = { fn: fn, interval: false };
+    __scheduleTimer(id, (typeof ms === 'number' && ms > 0) ? ms : 0, false);
+    return id;
+  };
+  globalThis.clearTimeout = function(id) { delete __timerMap[id]; };
 }
 if (typeof setInterval === 'undefined') {
-  globalThis.setInterval = function(fn, ms) { fn(); return 0; };
-  globalThis.clearInterval = function() {};
+  globalThis.setInterval = function(fn, ms) {
+    var id = ++__timerSeq;
+    __timerMap[id] = { fn: fn, interval: true };
+    __scheduleTimer(id, (typeof ms === 'number' && ms > 0) ? ms : 0, true);
+    return id;
+  };
+  globalThis.clearInterval = function(id) { delete __timerMap[id]; };
 }
+// Dart 侧 Future.delayed 到期后调用
+globalThis.__timerFire = function(id) {
+  var t = __timerMap[id];
+  if (!t) return;
+  if (t.interval) {
+    try { t.fn(); } catch (e) { if (typeof console !== 'undefined' && console.error) console.error(e); }
+    __scheduleTimer(id, t.ms, true);
+  } else {
+    delete __timerMap[id];
+    try { t.fn(); } catch (e) { if (typeof console !== 'undefined' && console.error) console.error(e); }
+  }
+};
 
 // atob / btoa
 if (typeof atob === 'undefined') {
@@ -234,6 +264,7 @@ if (typeof globalThis.lx === 'undefined') {
     sources: {},
 
     // 兼容双签名：lx.send(eventName, data) 或 lx.send({ type/log/... })
+    // 与官方契约一致：返回 Promise
     send: function(eventName, data) {
       var ev, dt;
       if (eventName !== null && typeof eventName === 'object') {
@@ -242,47 +273,84 @@ if (typeof globalThis.lx === 'undefined') {
       } else {
         ev = eventName; dt = data;
       }
-      sendMessage('lx', JSON.stringify({ type: 'send', event: ev, data: dt }));
+      if (ev === 'inited') {
+        __sendInited(dt);
+        return Promise.resolve();
+      }
+      return Promise.resolve(sendMessage('lx', JSON.stringify({ type: 'send', event: ev, data: dt })));
     },
 
     on: function(eventName, handler) {
       if (eventName === globalThis.lx.EVENT_NAMES.request) {
         __requestHandlers['_global'] = handler;
       }
+      return Promise.resolve();
     },
 
-    // lx.request(url, options) — HTTP 请求，返回 Promise<{statusCode,headers,body}>
-    request: function(url, options) {
+    // lx.request(url, options, callback) — 与官方 lx-music-mobile 契约一致：
+    //   - 第三参 callback(err, {statusCode,statusMessage,headers,body}, body)
+    //   - 返回 abort 函数；同时附加 then/catch/finally 兼容 Promise 用法
+    //   - body 自动 JSON.parse（失败保留原字符串），binary 选项跳过解析
+    request: function(url, options, callback) {
       var opts = options || {};
       if (typeof url === 'object') { opts = url; url = opts.url || ''; }
+      if (opts === null || typeof opts !== 'object') opts = {};
+      if (typeof callback !== 'function' && typeof opts.callback === 'function') {
+        callback = opts.callback;
+      }
       var method = opts.method || 'GET';
       var headers = opts.headers || {};
       var body = opts.body || opts.data || null;
+
+      // 官方契约：options.form = {k:v} → application/x-www-form-urlencoded
+      if (opts.form && typeof opts.form === 'object') {
+        var parts = [];
+        for (var fk in opts.form) {
+          if (opts.form[fk] !== undefined && opts.form[fk] !== null) {
+            parts.push(encodeURIComponent(fk) + '=' + encodeURIComponent(opts.form[fk]));
+          }
+        }
+        body = parts.join('&');
+        if (!headers['Content-Type']) {
+          headers['Content-Type'] = 'application/x-www-form-urlencoded';
+        }
+      }
 
       for (var k in headers) {
         if (Array.isArray(headers[k])) headers[k] = headers[k].join(', ');
       }
 
-      return new Promise(function(resolve, reject) {
-        httpFetch(url, { method: method, headers: headers, body: body })
-          .then(function(result) {
-            var rawBody = result.body || '';
-            // 注意：body 保持字符串（与官方 lx-music 一致），
-            // 由源脚本自行 JSON.parse。若这里解析成对象，脚本
-            // 按字符串处理（如 typeof 判断、正则、length）会出错。
-            resolve({
-              statusCode: result.statusCode,
-              headers: result.headers || {},
-              body: rawBody,
-            });
-            // callback 兼容（旧风格）
-            var cb = opts.callback;
-            if (typeof cb === 'function') {
-              try { cb(result.statusCode < 0 ? result.statusMessage : null, { statusCode: result.statusCode, body: rawBody }); } catch (e) {}
-            }
-          })
-          .catch(function(e) { reject(e); });
-      });
+      var promise = httpFetch(url, { method: method, headers: headers, body: body })
+        .then(function(result) {
+          var rawBody = result.body;
+          var parsed = rawBody;
+          if (typeof rawBody === 'string' && rawBody !== '' && !opts.binary) {
+            try { parsed = JSON.parse(rawBody); } catch (e) { parsed = rawBody; }
+          }
+          var response = {
+            statusCode: result.statusCode,
+            statusMessage: result.statusMessage || '',
+            headers: result.headers || {},
+            body: parsed,
+          };
+          if (typeof callback === 'function') {
+            try { callback(null, response, parsed); } catch (e) { console.error('[lx.request callback]', e); }
+          }
+          return response;
+        }, function(err) {
+          if (typeof callback === 'function') {
+            try { callback(err, null, null); } catch (e) { console.error('[lx.request callback]', e); }
+            return { statusCode: -1, statusMessage: String((err && err.message) || err), headers: {}, body: null };
+          }
+          throw err;
+        });
+
+      // 官方契约返回 abort 函数；附加 then/catch/finally 兼容 Promise 风格
+      var abort = function() {};
+      abort.then = promise.then.bind(promise);
+      abort.catch = promise.catch.bind(promise);
+      if (promise.finally) abort.finally = promise.finally.bind(promise);
+      return abort;
     },
 
     // 标准 LX 音源注册入口（新版契约）

@@ -90,6 +90,7 @@ class LxBridge implements MusicBackend {
   @override
   Future<bool> init() async {
     if (_loaded) return true;
+    _lastError = null;
     if (_source.scriptSource.isEmpty) {
       _lastError = '脚本内容为空';
       return false;
@@ -171,7 +172,8 @@ class LxBridge implements MusicBackend {
             '(子源: ${_capabilities.keys.join(", ")})');
       } else {
         print('[LXBridge] 引擎初始化超时: ${_source.name}');
-        _lastError = '初始化超时（15秒），脚本可能不兼容或格式不正确';
+        // 若脚本执行时报错（如源已失效/版本关闭），优先展示具体错误
+        _lastError ??= '初始化超时（15秒），脚本可能不兼容或格式不正确';
       }
 
       return _initialized;
@@ -227,6 +229,28 @@ class LxBridge implements MusicBackend {
       }
     });
 
+    // 定时器通道（真实异步定时器：JS setTimeout/setInterval → Dart 调度 → __timerFire）
+    _runtime!.onMessage('timer', (dynamic args) async {
+      try {
+        final params = _parseArgs(args);
+        final id = params['id'];
+        final ms = (params['ms'] as num?)?.toInt() ?? 0;
+        if (id == null) return null;
+        Future.delayed(Duration(milliseconds: ms), () {
+          if (_runtime == null) return;
+          try {
+            _runtime!.evaluate('__timerFire($id); true');
+            _runtime!.executePendingJob();
+          } catch (e) {
+            print('[LXBridge:timer] 触发失败 id=$id: $e');
+          }
+        });
+      } catch (e) {
+        print('[LXBridge:timer] 调度异常: $e');
+      }
+      return null;
+    });
+
     // LX 事件通道
     _runtime!.onMessage('lx', (dynamic args) async {
       try {
@@ -244,6 +268,10 @@ class LxBridge implements MusicBackend {
           }
         } else if (type == 'sourceRegister') {
           _handleSourceRegister(params['data']);
+        } else if (type == 'scriptError') {
+          final msg = params['message']?.toString() ?? '未知脚本错误';
+          print('[LXBridge] 脚本执行错误: $msg');
+          if (!_initialized) _lastError = '脚本错误: $msg';
         }
         return {'ok': true};
       } catch (e) {
@@ -1052,8 +1080,12 @@ try {
     }
   })();
 } catch(e) {
-  __sendInited({ sources: {} });
-  sendMessage('log', '[FATAL] ' + (e.message || String(e)));
+  var msg = (e && e.message) ? e.message : String(e);
+  sendMessage('log', '[FATAL] ' + msg);
+  // 把脚本错误上报给 Dart 侧，避免初始化超时且无任何提示
+  try {
+    sendMessage('lx', JSON.stringify({ type: 'scriptError', message: msg }));
+  } catch(e2) {}
 }
 ''';
   }
