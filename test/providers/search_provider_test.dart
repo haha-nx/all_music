@@ -72,7 +72,8 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           sourceListProvider.overrideWith(
-              (ref) => SourceListNotifier(Dio())..state = []),
+              (ref) => SourceListNotifier(Dio(), registerBuiltins: false)
+                ..state = []),
           searchProvider.overrideWith((ref) => SearchNotifier(ref)),
         ],
       );
@@ -88,15 +89,17 @@ void main() {
     test('search with only disabled sources', () async {
       final container = ProviderContainer(
         overrides: [
-          sourceListProvider.overrideWith((ref) => SourceListNotifier(Dio())..state = [
-            SourceDefinition(
-              id: 's1',
-              name: 'Disabled',
-              scriptSource: '',
-              enabled: false,
-              createdAt: DateTime.now(),
-            ),
-          ]),
+          sourceListProvider.overrideWith(
+              (ref) => SourceListNotifier(Dio(), registerBuiltins: false)
+                ..state = [
+                    SourceDefinition(
+                      id: 's1',
+                      name: 'Disabled',
+                      scriptSource: '',
+                      enabled: false,
+                      createdAt: DateTime.now(),
+                    ),
+                  ]),
           searchProvider.overrideWith((ref) => SearchNotifier(ref)),
         ],
       );

@@ -18,6 +18,9 @@ class Song {
   /// 由源脚本在搜索结果中提供，用于区分同一脚本的不同平台
   final String? sourceKey;
 
+  /// 搜索结果的完整原始 JS 数据（JSON），用于获取播放 URL/歌词时回传脚本
+  final String? rawData;
+
   const Song({
     required this.id,
     required this.source,
@@ -29,6 +32,7 @@ class Song {
     this.lyricId,
     this.sourceId,
     this.sourceKey,
+    this.rawData,
   });
 
   /// 跨平台去重 key：同名同歌手视为同一首歌
@@ -49,6 +53,7 @@ class Song {
     String? lyricId,
     String? sourceId,
     String? sourceKey,
+    String? rawData,
   }) {
     return Song(
       id: id ?? this.id,
@@ -61,6 +66,7 @@ class Song {
       lyricId: lyricId ?? this.lyricId,
       sourceId: sourceId ?? this.sourceId,
       sourceKey: sourceKey ?? this.sourceKey,
+      rawData: rawData ?? this.rawData,
     );
   }
 
@@ -75,6 +81,7 @@ class Song {
     'lyricId': lyricId,
     'sourceId': sourceId,
     'sourceKey': sourceKey,
+    'rawData': rawData,
   };
 
   factory Song.fromMap(Map<String, dynamic> m) => Song(
@@ -90,6 +97,7 @@ class Song {
     lyricId: m['lyricId'] as String?,
     sourceId: m['sourceId'] as String?,
     sourceKey: m['sourceKey'] as String?,
+    rawData: m['rawData'] as String?,
   );
 
   @override

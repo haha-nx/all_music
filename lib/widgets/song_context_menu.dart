@@ -101,8 +101,10 @@ class SongContextMenu extends ConsumerWidget {
               title: '下一首播放',
               onTap: () {
                 ref.read(playerProvider.notifier).playNext(song);
+                // 先取 messenger，pop 后 context 不可再用
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(
                     content: const Text('已添加到下一首播放'),
                     backgroundColor: AppColors.surfaceDark,
@@ -170,12 +172,25 @@ class SongContextMenu extends ConsumerWidget {
     ));
 
     try {
-      final backend =
-          await ref.read(sourceListProvider.notifier).getBackend(song.sourceId!);
-      if (backend == null) throw Exception('音源不可用');
-
       final track = TrackAdapter.fromLegacySong(song);
-      final url = await backend.getMusicUrl(track, quality: quality);
+      final sourceNotifier = ref.read(sourceListProvider.notifier);
+      final tryOrder = <String>[
+        if (song.sourceId != null) song.sourceId!,
+        ...sourceNotifier.enabledSources.map((s) => s.id),
+      ];
+
+      String? url;
+      final tried = <String>{};
+      for (final sourceId in tryOrder) {
+        if (!tried.add(sourceId)) continue;
+        final backend = await sourceNotifier.getBackend(sourceId);
+        if (backend == null) continue;
+        final result = await backend.getMusicUrl(track, quality: quality);
+        if (result != null && result.isNotEmpty) {
+          url = result;
+          break;
+        }
+      }
       if (url == null || url.isEmpty) throw Exception('获取播放地址失败');
 
       ref.read(downloadProvider.notifier).addAndStart(

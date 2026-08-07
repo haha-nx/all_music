@@ -21,6 +21,7 @@ class TrackAdapter {
       lyricId: track.lyricId,
       sourceId: track.sourceId,
       sourceKey: track.sourceKey,
+      rawData: track.rawData,
     );
   }
 
@@ -36,6 +37,7 @@ class TrackAdapter {
       sourceId: song.sourceId ?? '',
       sourceKey: song.sourceKey ?? '',
       lyricId: song.lyricId,
+      rawData: song.rawData,
     );
   }
 

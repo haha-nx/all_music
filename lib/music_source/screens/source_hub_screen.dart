@@ -36,23 +36,24 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
         padding: const EdgeInsets.all(AppSizes.paddingH),
         children: [
           // ── 头部说明 ──
-          _SectionHeader(
-            title: '已导入音源',
-            subtitle: '启用音源后可在搜索中使用。可随时移除。',
-          ),
+          _SectionHeader(title: '已导入音源', subtitle: '启用音源后可在搜索中使用。可随时移除。'),
 
           const SizedBox(height: 12),
 
           // ── 音源列表 ──
           if (sources.isEmpty)
-            _EmptyState(onImport: _showImportDialog)
+            _EmptyState(onImport: _showImportFromUrl)
           else
-            ...sources.map((source) => _SourceCard(
-                  source: source,
-                  onToggle: () =>
-                      ref.read(sourceListProvider.notifier).toggle(source.id),
-                  onRemove: () => _confirmRemove(source),
-                )),
+            ...sources.map(
+              (source) => _SourceCard(
+                source: source,
+                onToggle: () =>
+                    ref.read(sourceListProvider.notifier).toggle(source.id),
+                onRemove: source.origin == SourceOrigin.builtin
+                    ? null
+                    : () => _confirmRemove(source),
+              ),
+            ),
 
           const SizedBox(height: 32),
 
@@ -184,8 +185,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                       _showError(result.error ?? '导入失败');
                     }
                   },
-                  child: const Text('导入',
-                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text(
+                    '导入',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
             ],
@@ -283,8 +286,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                       _showError(result.error ?? '导入失败');
                     }
                   },
-                  child: const Text('下载并导入',
-                      style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text(
+                    '下载并导入',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
             ],
@@ -299,8 +304,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('移除音源',
-            style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text(
+          '移除音源',
+          style: TextStyle(color: AppColors.textPrimary),
+        ),
         content: Text(
           '确定要移除「${source.name}」吗？',
           style: const TextStyle(color: AppColors.textSecondary),
@@ -308,8 +315,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消',
-                style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text(
+              '取消',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -339,8 +348,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
               children: [
                 const CircularProgressIndicator(color: AppColors.primary),
                 const SizedBox(height: 16),
-                Text(msg,
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                Text(
+                  msg,
+                  style: const TextStyle(color: AppColors.textSecondary),
+                ),
               ],
             ),
           ),
@@ -364,16 +375,15 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surfaceDark,
-        title: const Text('导入失败',
-            style: TextStyle(color: AppColors.error)),
-        content: Text(msg,
-            style: const TextStyle(
-                color: AppColors.textSecondary, fontSize: 13)),
+        title: const Text('导入失败', style: TextStyle(color: AppColors.error)),
+        content: Text(
+          msg,
+          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('确定',
-                style: TextStyle(color: AppColors.primary)),
+            child: const Text('确定', style: TextStyle(color: AppColors.primary)),
           ),
         ],
       ),
@@ -454,7 +464,9 @@ class _SourceCard extends StatelessWidget {
                     ),
                     child: Icon(
                       enabled ? Icons.music_note : Icons.music_note_outlined,
-                      color: enabled ? AppColors.primary : AppColors.textTertiary,
+                      color: enabled
+                          ? AppColors.primary
+                          : AppColors.textTertiary,
                       size: 22,
                     ),
                   ),
@@ -522,11 +534,15 @@ class _SourceCard extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: onRemove,
-                    icon: const Icon(Icons.delete_outline,
-                        size: 16, color: AppColors.error),
-                    label: const Text('移除',
-                        style: TextStyle(
-                            color: AppColors.error, fontSize: 13)),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: AppColors.error,
+                    ),
+                    label: const Text(
+                      '移除',
+                      style: TextStyle(color: AppColors.error, fontSize: 13),
+                    ),
                   ),
                 ),
               ],
@@ -539,15 +555,18 @@ class _SourceCard extends StatelessWidget {
 
   String _buildSubtitle() {
     final parts = <String>[];
+    if (source.origin == SourceOrigin.builtin) parts.add('内置');
     if (source.version != null) parts.add('v${source.version}');
     if (source.author != null) parts.add(source.author!);
     if (source.description != null && source.description!.isNotEmpty) {
       parts.add(source.description!);
     }
     if (parts.isEmpty) {
-      parts.add(source.capabilities.isNotEmpty
-          ? '${source.capabilities.length} 个子源'
-          : '等待初始化...');
+      parts.add(
+        source.capabilities.isNotEmpty
+            ? '${source.capabilities.length} 个子源'
+            : '等待初始化...',
+      );
     }
     return parts.join(' · ');
   }
@@ -568,10 +587,7 @@ class _CapabilityChip extends StatelessWidget {
       ),
       child: Text(
         '${capability.name} (${capability.actions.join('/')})',
-        style: const TextStyle(
-          color: AppColors.primary,
-          fontSize: 11,
-        ),
+        style: const TextStyle(color: AppColors.primary, fontSize: 11),
       ),
     );
   }
@@ -592,8 +608,11 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Icon(Icons.library_music_outlined,
-                size: 48, color: AppColors.textTertiary),
+            Icon(
+              Icons.library_music_outlined,
+              size: 48,
+              color: AppColors.textTertiary,
+            ),
             const SizedBox(height: 12),
             const Text(
               '还没有任何音源',

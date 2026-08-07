@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:quickjs_engine/quickjs_engine.dart';
@@ -44,6 +44,9 @@ class LxBridge implements MusicBackend {
   /// 搜索结果缓存 — songId → 原始JS数据JSON
   /// 用于后续 getMusicUrl/getLyric 调用时提供完整上下文
   final Map<String, String> _searchCache = {};
+
+  /// HTTP 请求去重 — dedupKey → Future<Map>
+  final Map<String, Future<Map<String, dynamic>>> _pendingHttpRequests = {};
 
   LxBridge(this._source, this._dio);
 
@@ -186,39 +189,87 @@ class LxBridge implements MusicBackend {
 
   // ── Dart ↔ JS 消息通道 ──
 
+
+  /// Register a channel handler that returns JSON strings instead of Maps.
+  /// This avoids the complex _dartToJs Map-to-JSObject conversion (multiple
+  /// nested FFI calls) inside the QuickJS js_channel native callback, which
+  /// can SIGSEGV on Android when called re-entrantly from within evaluate().
+  void _onMessageJson(String channel, dynamic Function(dynamic args) fn) {
+    _runtime!.onMessage(channel, (dynamic args) {
+      final result = fn(args);
+      if (result is Map) return jsonEncode(result);
+      return result;
+    });
+  }
+
   void _setupChannels() {
     // HTTP 请求通道
-    _runtime!.onMessage('http', (dynamic args) async {
+    _onMessageJson('http', (dynamic args) {
       try {
         final params = _parseArgs(args);
         final url = params['url'] as String? ?? '';
         final method = (params['method'] as String?)?.toUpperCase() ?? 'GET';
-        final headers = (params['headers'] as Map?)?.cast<String, String>() ?? {};
-        final body = params['body'];
+        int? requestId;
+       final rawRequestId = params['id'] ?? params['requestId'];
+       if (rawRequestId is num) requestId = rawRequestId.toInt();
 
-        final response = await _dio.request(
-          url,
-          data: body,
-          options: Options(
-            method: method,
-            headers: headers,
-            responseType: ResponseType.plain,
-            validateStatus: (_) => true,
-            // 关键：脚本顶层常会 await httpFetch 检查更新/加载配置，
-            // 若请求无限挂起会导致引擎初始化超时。必须设置短超时快速失败。
-            connectTimeout: const Duration(seconds: 8),
-            receiveTimeout: const Duration(seconds: 10),
-            sendTimeout: const Duration(seconds: 10),
-          ),
+        print('[LXBridge:http] req: $method $url (id=$requestId)');
+
+        // Malformed URLs from buggy source scripts can crash the QuickJS
+        // promise bridge, so fail fast before a native request is started.
+        if (url.contains('/undefined/') ||
+            url.contains('undefined?') ||
+            url.contains('/null/')) {
+          return <String, dynamic>{
+            'statusCode': -1,
+            'statusMessage': 'invalid url from script',
+            'body': '',
+          };
+        }
+
+        // 注：不再拦截 checkUpdate——「独家音源」等脚本在初始化时请求自己的
+        // 服务器做版本/密钥同步，若拦截返回假响应，脚本解密该响应会深递归
+        // StackOverflow（表现为初始化时 unhandled rejection: Stack Overflow），
+        // 且签名密钥等状态未就绪，播放时 URL 签名失败（sign=fail）无法播放。
+        // 放行后由 Dio 超时（connect 8s / receive 10s）兜底，脚本自身有 catch。
+        // 如需彻底禁用脚本自我更新，可在 SourceDefinition 层面按脚本源决定。
+
+        // Deduplicate: if the same URL+method is already in flight, reuse it.
+        final dedupKey = '$method $url';
+        if (_pendingHttpRequests.containsKey(dedupKey)) {
+          if (requestId != null) {
+            final id = requestId;
+            final existing = _pendingHttpRequests[dedupKey]!;
+            existing.then(
+              (result) => _resolveHttp(id, result),
+              onError: (e) => _resolveHttpError(id, e),
+            );
+            return <String, dynamic>{'pending': true, 'requestId': requestId};
+          }
+          return <String, dynamic>{
+            'statusCode': -1,
+            'statusMessage': 'http request requires id',
+            'body': '',
+          };
+        }
+
+        if (requestId == null) {
+          return <String, dynamic>{
+            'statusCode': -1,
+            'statusMessage': 'http request requires id',
+            'body': '',
+          };
+        }
+
+        final requestFuture = _performHttpRequest(url, method, params);
+        _pendingHttpRequests[dedupKey] = requestFuture;
+        final id = requestId;
+        requestFuture.then(
+          (result) => _resolveHttp(id, result),
+          onError: (e) => _resolveHttpError(id, e),
         );
-
-        // 返回简单结构，避免复杂嵌套 Map 导致 _dartToJs 问题
-        return <String, dynamic>{
-          'statusCode': response.statusCode ?? 0,
-          'statusMessage': response.statusMessage ?? '',
-          'body': response.data?.toString() ?? '',
-          // 不传 headers.map（Map<String,List<String>> 可能导致序列化问题）
-        };
+        requestFuture.whenComplete(() => _pendingHttpRequests.remove(dedupKey));
+        return <String, dynamic>{'pending': true, 'requestId': requestId};
       } catch (e) {
         print('[LXBridge:http] 请求异常: $e');
         return <String, dynamic>{
@@ -230,7 +281,7 @@ class LxBridge implements MusicBackend {
     });
 
     // 定时器通道（真实异步定时器：JS setTimeout/setInterval → Dart 调度 → __timerFire）
-    _runtime!.onMessage('timer', (dynamic args) async {
+    _onMessageJson('timer', (dynamic args) {
       try {
         final params = _parseArgs(args);
         final id = params['id'];
@@ -252,7 +303,7 @@ class LxBridge implements MusicBackend {
     });
 
     // LX 事件通道
-    _runtime!.onMessage('lx', (dynamic args) async {
+    _onMessageJson('lx', (dynamic args) {
       try {
         final params = _parseArgs(args);
         final type = params['type'] as String?;
@@ -281,11 +332,78 @@ class LxBridge implements MusicBackend {
     });
 
     // 日志通道
-    _runtime!.onMessage('log', (dynamic args) async {
+    _onMessageJson('log', (dynamic args) {
       // ignore: avoid_print
       print('[LX:${_source.name}] $args');
       return <String, dynamic>{'ok': true};
     });
+  }
+
+  Future<Map<String, dynamic>> _performHttpRequest(
+    String url,
+    String method,
+    Map<String, dynamic> params,
+  ) async {
+    final headers = (params['headers'] as Map?)?.cast<String, String>() ?? {};
+    final body = params['body'];
+
+    final response = await _dio.request(
+      url,
+      data: body,
+      options: Options(
+        method: method,
+        headers: headers,
+        responseType: ResponseType.plain,
+        validateStatus: (_) => true,
+        connectTimeout: const Duration(seconds: 8),
+        receiveTimeout: const Duration(seconds: 10),
+        sendTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+    // Build response headers map (lx-music-mobile passes headers; some
+    // source scripts check response headers for cookies, content-type, etc.)
+    final responseHeaders = <String, String>{};
+    response.headers.forEach((name, values) {
+      responseHeaders[name] = values.join(', ');
+    });
+
+    return <String, dynamic>{
+      'statusCode': response.statusCode ?? 0,
+      'statusMessage': response.statusMessage ?? '',
+      'headers': responseHeaders,
+      'body': response.data?.toString() ?? '',
+    };
+  }
+
+  /// Settle the JS Promise created by __httpRequest without crossing the
+  /// plugin's Dart Future -> JS Promise bridge (which segfaults on Android).
+  void _resolveHttp(int id, Map<String, dynamic> result) {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    final body = result['body']?.toString() ?? '';
+    // 只打印长度不打印响应体——播放 URL 响应可能包含签名/密钥等敏感内容。
+    print('[LXBridge:http] resolve: id=$id statusCode=${result['statusCode']} bodyLen=${body.length}');
+    try {
+      runtime.evaluate('__httpResolve($id, ${jsonEncode(result)}); true');
+      runtime.executePendingJob();
+    } catch (e) {
+      print('[LXBridge:http] resolve error: $e');
+    }
+  }
+
+  void _resolveHttpError(int id, Object error) {
+    final runtime = _runtime;
+    if (runtime == null) return;
+    print('[LXBridge:http] reject: id=$id error=$error');
+    try {
+      runtime.evaluate(
+        '__httpReject($id, ${jsonEncode(error.toString())}); true',
+      );
+      runtime.executePendingJob();
+    } catch (e) {
+      print('[LXBridge:http] reject error: $e');
+    }
   }
 
   /// 旧契约：lx.send('inited', { sources: {...} })
@@ -541,14 +659,21 @@ class LxBridge implements MusicBackend {
               return null;
             }
             return null;
-          } catch(e) { return null; }
+          } catch(e) {
+            console.error('[getMusicUrl] sourceKey=' + '${sourceKey}' + ' songId=' + (song && song.id ? song.id : '?') + ' err=' + (e && e.message ? e.message : String(e)));
+            return null;
+          }
         })()
       ''');
 
       _runtime!.executePendingJob();
       final resolved = await _runtime!.handlePromise(result);
       final raw = resolved.stringResult;
-      if (raw.isEmpty || raw == 'null') return null;
+      print('[LX] getMusicUrl resolved: "${raw.length > 120 ? raw.substring(0, 120) + '...' : raw}" (sourceKey=$sourceKey)');
+      if (raw.isEmpty || raw == 'null') {
+        print('[LX] getMusicUrl returned null (sourceKey=$sourceKey, quality=$q, songId=${track.id})');
+        return null;
+      }
 
       try {
         final obj = jsonDecode(raw) as Map<String, dynamic>;
@@ -557,6 +682,7 @@ class LxBridge implements MusicBackend {
         return raw;
       }
     } catch (e) {
+      print('[LX] getMusicUrl exception: $e (sourceKey=$sourceKey, songId=${track.id})');
       return null;
     }
   }
@@ -999,17 +1125,50 @@ class LxBridge implements MusicBackend {
   /// 构造传给 JS 的 song 对象 JSON
   /// 优先用搜索时保存的原始数据（字段最完整），否则用 track 字段兜底
   String _songJson(MusicTrack track) {
-    if (track.rawData != null && track.rawData!.isNotEmpty) {
-      return track.rawData!;
-    }
-    return jsonEncode({
-      'id': track.id,
-      'name': track.title,
-      'singer': track.artist,
-      'album': track.album,
-      'album_pic': track.coverUrl,
-      'source': track.sourceId,
-    });
+   if (track.rawData != null && track.rawData!.isNotEmpty) {
+     // Ensure source field is the platform key (e.g. 'kw'), not the source
+     // definition ID (e.g. '酷音源'). lx-music-api-server sources read
+     // musicInfo.source to pick the platform; wrong source => 'failed'.
+     try {
+       final raw = jsonDecode(track.rawData!) as Map<String, dynamic>;
+       final src = raw['source']?.toString();
+       if (src == null || src.isEmpty || src == track.sourceId) {
+         raw['source'] = track.sourceKey;
+       }
+       // Different LX source scripts read different field names for the song
+       // ID (songmid, songId, musicId, hash, rid, copyrightId). Ensure all
+       // common aliases are set so the script's musicUrl handler finds a
+       // valid ID regardless of which field it reads.
+       final songId = raw['id']?.toString() ?? track.id;
+       if (songId.isNotEmpty) {
+         raw['id'] = songId;
+         raw['songmid'] ??= songId;
+         raw['songId'] ??= songId;
+         raw['musicId'] ??= songId;
+         raw['music_id'] ??= songId;
+         raw['hash'] ??= songId;
+         raw['rid'] ??= songId;
+         raw['copyrightId'] ??= songId;
+         raw['song_id'] ??= songId;
+       }
+       return jsonEncode(raw);
+     } catch (_) {
+       // rawData not valid JSON, fall through to constructed object
+     }
+   }
+   return jsonEncode({
+     'id': track.id,
+     'name': track.title,
+     'singer': track.artist,
+     'album': track.album,
+     'album_pic': track.coverUrl,
+     'source': track.sourceKey,
+     'songmid': track.id,
+     'songId': track.id,
+     'musicId': track.id,
+     'hash': track.id,
+     'rid': track.id,
+   });
   }
 
   int? _parseDuration(dynamic d) {

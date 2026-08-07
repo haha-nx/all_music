@@ -33,10 +33,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   /// 显示播放错误提示
   void _showPlaybackError(String error) {
+    if (!mounted) return; // 页面已退出（unmounted）时不再使用 context
     if (_lastDisplayedError == error) return; // 避免重复显示相同错误
     _lastDisplayedError = error;
-    ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
       SnackBar(
         content: Row(
           children: [
@@ -54,7 +56,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           label: '知道了',
           textColor: Colors.white,
           onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            messenger.hideCurrentSnackBar();
           },
         ),
       ),
@@ -87,6 +89,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     // 检测播放错误并显示 SnackBar
     if (playerState.playbackError != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // 页面已退出，跳过
         _showPlaybackError(playerState.playbackError!);
       });
     } else {
@@ -96,6 +99,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     // 歌词滚动同步
     if (playerState.showLyrics && playerState.lyricLines.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // 页面已退出，跳过
         _scrollToCurrentLine(playerState.currentLyricIndex);
       });
     }

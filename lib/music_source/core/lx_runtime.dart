@@ -1,4 +1,4 @@
-/// LX Music 脚本运行时环境
+﻿/// LX Music 脚本运行时环境
 ///
 /// 提供 QuickJS 中运行 LX Music 源脚本所需的一切：
 /// - Web API polyfills (atob, btoa, TextEncoder, etc.)
@@ -333,6 +333,10 @@ if (typeof globalThis.lx === 'undefined') {
             headers: result.headers || {},
             body: parsed,
           };
+          // Log non-2xx responses for debugging
+          if (response.statusCode > 0 && (response.statusCode < 200 || response.statusCode >= 300)) {
+            console.error('[lx.request] ' + method + ' ' + url + ' => ' + response.statusCode + ' body=' + String(parsed).substring(0, 200));
+          }
           if (typeof callback === 'function') {
             try { callback(null, response, parsed); } catch (e) { console.error('[lx.request callback]', e); }
           }
@@ -511,7 +515,79 @@ if (typeof globalThis.lx === 'undefined') {
   // ═════════════════════════════════════════
 
   static const String _httpFetch = r'''
-// ── httpFetch — JS → Dart HTTP 桥接 ──
+// ------ httpFetch --- JS -> Dart HTTP bridge ------
+// Avoid returning a Dart Future across the QuickJS channel: the vendored
+// quickjs_engine Future -> Promise bridge segfaults on Android. Instead the
+// Dart side returns a request id synchronously and later calls
+// __httpResolve/__httpReject to settle the JS Promise.
+var __httpSeq = 0;
+var __httpPending = {};
+
+globalThis.__httpRequest = function(url, options) {
+  var id = ++__httpSeq;
+  options = options || {};
+  var resolveFn;
+  var requestPromise = new Promise(function(resolve) { resolveFn = resolve; });
+  __httpPending[id] = { resolve: resolveFn };
+
+  var reply;
+  try {
+    reply = sendMessage('http', JSON.stringify({
+      id: id,
+      url: url,
+      method: options.method || 'GET',
+      headers: options.headers || {},
+      body: options.body || options.data || null,
+    }));
+  } catch (e) {
+    reply = { statusCode: -1, statusMessage: (e && e.message) || String(e), body: '' };
+  }
+
+  // Parse string replies early: sendMessage may return a JSON string to
+  // avoid the complex _dartToJs Map-to-JSObject conversion in the native
+  // bridge callback (multiple nested FFI calls that can SIGSEGV on Android).
+  if (typeof reply === 'string') {
+    try {
+      reply = JSON.parse(reply);
+    } catch (e) {
+      reply = { statusCode: -1, statusMessage: (e && e.message) || String(e), body: reply };
+    }
+  }
+
+  if (reply && reply.pending === true) {
+    return requestPromise;
+  }
+
+  delete __httpPending[id];
+  resolveFn(reply || { statusCode: -1, statusMessage: 'no reply', body: '' });
+  return requestPromise;
+};
+
+globalThis.__httpResolve = function(id, resultJson) {
+  var pending = __httpPending[id];
+  if (!pending) return;
+  delete __httpPending[id];
+  var result = resultJson;
+  if (typeof resultJson === 'string') {
+    try {
+      result = JSON.parse(resultJson);
+    } catch (e) {
+      result = { statusCode: -1, statusMessage: (e && e.message) || String(e), body: resultJson };
+    }
+  }
+  pending.resolve(result || { statusCode: -1, statusMessage: 'empty reply', body: '' });
+};
+
+globalThis.__httpReject = function(id, errorJson) {
+  var pending = __httpPending[id];
+  if (!pending) return;
+  delete __httpPending[id];
+  var result = (typeof errorJson === 'string')
+    ? { statusCode: -1, statusMessage: errorJson, body: '' }
+    : (errorJson || { statusCode: -1, statusMessage: 'http error', body: '' });
+  pending.resolve(result);
+};
+
 globalThis.httpFetch = async function(url, options) {
   options = options || {};
   if (options.headers) {
@@ -520,20 +596,21 @@ globalThis.httpFetch = async function(url, options) {
         options.headers[k] = options.headers[k].join(', ');
     }
   }
-  var rawResult = await sendMessage('http', JSON.stringify({
-    url: url,
+  var rawResult = await __httpRequest(url, {
     method: options.method || 'GET',
     headers: options.headers || {},
     body: options.body || options.data || null,
-  }));
-
+  });
   var result;
   if (typeof rawResult === 'string') {
     try { result = JSON.parse(rawResult); } catch(e) { result = { statusCode: -1, body: rawResult }; }
   } else {
     result = rawResult || {};
   }
-
+  // Log failed HTTP requests for debugging (helps trace 'Error: failed')
+  if (result.statusCode > 0 && (result.statusCode < 200 || result.statusCode >= 300)) {
+    console.error('[httpFetch] ' + (options.method || 'GET') + ' ' + url + ' => ' + result.statusCode + ' body=' + (result.body || '').substring(0, 200));
+  }
   return {
     statusCode: result.statusCode || -1,
     statusMessage: result.statusMessage || '',

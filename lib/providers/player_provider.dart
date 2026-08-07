@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
 import '../models/lyric.dart';
 import '../music_source/core/track_adapter.dart';
+import '../music_source/models/music_track.dart';
 import '../music_source/providers/music_source_provider.dart';
 import '../services/audio_handler.dart';
 import 'favorites_provider.dart';
@@ -35,7 +36,8 @@ class SleepTimerOption {
     final h = remaining.inHours;
     final m = remaining.inMinutes % 60;
     final s = remaining.inSeconds % 60;
-    if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    if (h > 0)
+      return '$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }
@@ -53,6 +55,7 @@ class PlayerState {
   final List<LyricLine> lyricLines;
   final int currentLyricIndex;
   final bool showLyrics;
+
   /// 播放错误消息（非 null 时表示播放失败，应显示给用户）
   final String? playbackError;
 
@@ -129,17 +132,14 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
   Timer? _sleepTimer;
 
   PlayerNotifier(this._ref, this._audioPlayer, this._audioHandler)
-      : super(const PlayerState()) {
+    : super(const PlayerState()) {
     // 连接系统媒体控制回调
     _audioHandler.onSkipToNext = next;
     _audioHandler.onSkipToPrevious = previous;
     // 监听播放位置
     _audioPlayer.positionStream.listen((position) {
       final lyricIdx = _findCurrentLyricIndex(position);
-      state = state.copyWith(
-        position: position,
-        currentLyricIndex: lyricIdx,
-      );
+      state = state.copyWith(position: position, currentLyricIndex: lyricIdx);
     });
 
     // 监听总时长
@@ -201,11 +201,25 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     if (song == null) return;
 
     try {
-      final backend = await _ref.read(sourceListProvider.notifier).getBackend(song.sourceId ?? '');
-      if (backend == null) return;
-
       final track = TrackAdapter.fromLegacySong(song);
-      final lrc = await backend.getLyric(track);
+      final sourceNotifier = _ref.read(sourceListProvider.notifier);
+      final tryOrder = <String>[
+        if (song.sourceId != null) song.sourceId!,
+        ...sourceNotifier.enabledSources.map((s) => s.id),
+      ];
+
+      String? lrc;
+      final tried = <String>{};
+      for (final sourceId in tryOrder) {
+        if (!tried.add(sourceId)) continue;
+        final backend = await sourceNotifier.getBackend(sourceId);
+        if (backend == null) continue;
+        final result = await backend.getLyric(track);
+        if (result != null && result.isNotEmpty) {
+          lrc = result;
+          break;
+        }
+      }
       if (lrc != null && lrc.isNotEmpty && mounted) {
         final lyric = Lyric.fromLrc(lrc, songId: song.id);
         state = state.copyWith(
@@ -268,12 +282,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       currentIdx = newIndex;
     }
 
-    state = state.copyWith(
-      queue: newQueue,
-      currentIndex: currentIdx,
-    );
+    state = state.copyWith(queue: newQueue, currentIndex: currentIdx);
   }
-
 
   /// 播放歌曲（内部方法，返回是否成功）
   Future<bool> _playSong(Song song, {List<Song>? queue}) async {
@@ -307,8 +317,44 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
           final bridge = await sourceNotifier.getBackend(sourceId);
           if (bridge == null) continue;
 
-          // 如果音源有多个子源key，尝试匹配
-          final result = await bridge.getMusicUrl(track, quality: quality);
+          // 目标源与歌曲原始源不同（跨源降级）：先在目标源按歌名+歌手
+          // 搜索，拿到该源的真实 track id——直接用原 id（如腾讯 songmid）
+          // 查网易云/酷狗会返回 null，导致「暂无可用播放源」。
+          MusicTrack targetTrack = track;
+          if (sourceId != song.sourceId &&
+              bridge.searchKeys.isNotEmpty) {
+            final results = await bridge.search(
+              '${song.name} ${song.artist}'.trim(),
+              limit: 5,
+              type: SearchType.song,
+            );
+            // 优先匹配歌手，其次取第一个结果
+            MusicTrack? matched;
+            if (song.artist.isNotEmpty) {
+              matched = results.where((t) {
+                final a = t.artist.toLowerCase();
+                final want = song.artist.toLowerCase();
+                return a.contains(want) || want.contains(a);
+              }).firstOrNull;
+            }
+            matched ??= results.firstOrNull;
+            if (matched != null) {
+              targetTrack = MusicTrack(
+                id: matched.id,
+                title: matched.title,
+                artist: matched.artist,
+                album: matched.album,
+                coverUrl: matched.coverUrl,
+                durationMs: matched.durationMs,
+                sourceId: sourceId,
+                sourceKey: matched.sourceKey,
+                rawData: matched.rawData,
+              );
+            }
+          }
+
+          final result =
+              await bridge.getMusicUrl(targetTrack, quality: quality);
           if (result != null && result.isNotEmpty) {
             url = result;
             break;
@@ -321,12 +367,24 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       if (url == null || url.isEmpty) {
         state = state.copyWith(
-          playbackError: '「${song.name}」暂无可用播放源${lastError != null ? '（$lastError）' : ''}',
+          playbackError:
+              '「${song.name}」暂无可用播放源${lastError != null ? '（$lastError）' : ''}',
         );
         return false;
       }
 
-      await _audioPlayer.setUrl(url);
+      final safeUrl = url.trim();
+      if (safeUrl.contains('/undefined/') ||
+          safeUrl.contains('undefined?') ||
+          safeUrl.contains('/null/') ||
+          !(safeUrl.startsWith('http://') || safeUrl.startsWith('https://'))) {
+        state = state.copyWith(
+          playbackError: '「${song.name}」播放地址无效（脚本返回了错误链接）',
+        );
+        return false;
+      }
+
+      await _audioPlayer.setUrl(safeUrl);
 
       // 记录到最近播放
       _ref.read(favoritesProvider.notifier).addToRecent(song);
@@ -435,10 +493,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
 
       final song = state.queue[nextIndex];
       // 先更新状态
-      state = state.copyWith(
-        currentSong: song,
-        currentIndex: nextIndex,
-      );
+      state = state.copyWith(currentSong: song, currentIndex: nextIndex);
       // 尝试播放
       final ok = await _playSong(song, queue: state.queue);
       if (ok) return; // 播放成功，退出
@@ -448,10 +503,7 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     }
     // ignore: avoid_print
     print('[Player] 队列中所有歌曲 URL 均获取失败');
-    state = state.copyWith(
-      playbackError: '队列中所有歌曲暂无可用播放源',
-      isPlaying: false,
-    );
+    state = state.copyWith(playbackError: '队列中所有歌曲暂无可用播放源', isPlaying: false);
   }
 
   /// 上一首（支持 Fisher-Yates 随机播放，URL 失败自动跳过）
@@ -490,21 +542,16 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       }
 
       final song = state.queue[prevIndex];
-      state = state.copyWith(
-        currentSong: song,
-        currentIndex: prevIndex,
-      );
+      state = state.copyWith(currentSong: song, currentIndex: prevIndex);
       final ok = await _playSong(song, queue: state.queue);
       if (ok) return;
       // ignore: avoid_print
       print('[Player] 跳过 (URL获取失败): ${song.name}');
     }
     // 所有歌曲都失败
-    state = state.copyWith(
-      playbackError: '队列中所有歌曲暂无可用播放源',
-      isPlaying: false,
-    );
+    state = state.copyWith(playbackError: '队列中所有歌曲暂无可用播放源', isPlaying: false);
   }
+
   Future<void> seek(Duration position) async {
     await _audioPlayer.seek(position);
   }
@@ -570,6 +617,8 @@ final audioPlayerInstance = AudioPlayer();
 /// 全局共享 MusicAudioHandler（由 main 初始化）
 late final MusicAudioHandler audioHandlerInstance;
 
-final playerProvider = StateNotifierProvider<PlayerNotifier, PlayerState>((ref) {
+final playerProvider = StateNotifierProvider<PlayerNotifier, PlayerState>((
+  ref,
+) {
   return PlayerNotifier(ref, audioPlayerInstance, audioHandlerInstance);
 });

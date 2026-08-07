@@ -120,8 +120,19 @@ class SearchNotifier extends StateNotifier<SearchState> {
         return;
       }
 
+      final searchBridges =
+          bridges.where((b) => b.searchKeys.isNotEmpty).toList();
+      if (searchBridges.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          hasSearched: true,
+          error: '当前没有支持搜索的音源，请导入带 search 能力的 LX 音源',
+        );
+        return;
+      }
+
       final tracks = await SearchAggregator.search(
-        bridges,
+        searchBridges,
         keyword,
         limit: 20,
         type: type,
@@ -130,7 +141,7 @@ class SearchNotifier extends StateNotifier<SearchState> {
 
       if (tracks.isEmpty) {
         // 收集各后端的错误信息，便于在真机上排查（网络/接口问题等）
-        final errs = bridges
+        final errs = searchBridges
             .where((b) => b.lastError != null && b.lastError!.isNotEmpty)
             .map((b) => b.lastError!)
             .toSet()
