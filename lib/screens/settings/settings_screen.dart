@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'account_center_screen.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/settings_provider.dart';
@@ -89,6 +90,19 @@ class SettingsScreen extends ConsumerWidget {
                     subtitle: '验证搜索、播放、歌词功能',
                     onTap: () {
                       context.push('/source-test');
+                    },
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.account_circle_outlined,
+                    title: '账号中心',
+                    subtitle: '登录内置音源账号（网易云/QQ音乐等）',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AccountCenterScreen(),
+                        ),
+                      );
                     },
                   ),
                 ],
