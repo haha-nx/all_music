@@ -43,3 +43,27 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Build artifacts (native/plugin)
+*.dll
+*.so
+*.a
+*.o
+*.obj
+*.dylib
+android/.cxx/
+android/app/.cxx/
+local_plugins/**/.cxx/
+local_plugins/**/.dart_tool/
+local_plugins/**/build/
+local_plugins/**/ephemeral/
+android/build/
+macos/Flutter/ephemeral/
+windows/flutter/ephemeral/
+linux/flutter/ephemeral/
+
+# Tool session data
+.reasonix/
+.fetch/
+.dart-tool-appdata/
+.workbuddy/
