@@ -1,6 +1,14 @@
-import 'package:dio/dio.dart';
+﻿import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
+import '../builtin/builtin_platforms.dart';
+import '../builtin/builtin_search_backend.dart';
+import '../builtin/kugou_search_api.dart';
+import '../builtin/kuwo_search_api.dart';
+import '../builtin/migu_search_api.dart';
+import '../builtin/netease_search_api.dart';
+import '../builtin/platform_search_api.dart';
+import '../builtin/tencent_search_api.dart';
 import '../core/lx_bridge.dart';
 import '../core/music_backend.dart';
 import '../models/source_definition.dart';
@@ -25,14 +33,77 @@ class SourceManager {
   /// 变更回调
   void Function(List<SourceDefinition> sources)? onChanged;
 
-  SourceManager(this._dio);
+  /// 登录态 cookie 提供回调（platformKey → cookie 串）
+  final String? Function(String platformKey)? cookieProvider;
+
+  /// QQ 音乐设备 guid 提供回调（platformKey → guid 串）
+  final String? Function(String platformKey)? guidProvider;
+
+  SourceManager(
+    this._dio, {
+    bool registerBuiltins = true,
+    this.cookieProvider,
+    this.guidProvider,
+  }) {
+    if (registerBuiltins) _registerBuiltins();
+  }
 
   // ── 后端管理 ──
 
   /// 根据音源类型创建对应后端
   MusicBackend _createBackend(SourceDefinition source) {
-    // 用户导入的脚本统一走 JS 引擎
+    if (source.backendType == SourceBackendType.direct) {
+      final platform =
+          kBuiltinPlatforms.where((p) => p.id == source.id).firstOrNull;
+      if (platform != null) {
+        return BuiltinSearchBackend(
+          platform: platform,
+          sourceId: source.id,
+          api: _createPlatformApi(platform),
+        );
+      }
+    }
     return LxBridge(source, _dio);
+  }
+
+  /// 注册内置搜索平台
+  void _registerBuiltins() {
+    for (final platform in kBuiltinPlatforms) {
+      if (sources.any((s) => s.id == platform.id)) continue;
+      sources.add(SourceDefinition(
+        id: platform.id,
+        name: platform.name,
+        backendType: SourceBackendType.direct,
+        origin: SourceOrigin.builtin,
+        enabled: true,
+        createdAt: DateTime(2026, 1, 1),
+      ));
+    }
+  }
+
+  PlatformSearchApi _createPlatformApi(BuiltinPlatform platform) {
+    switch (platform.sourceKey) {
+      case 'wy':
+        return NeteaseSearchApi(
+            sourceId: platform.id, dio: _dio, cookieProvider: cookieProvider);
+      case 'tx':
+        return TencentSearchApi(
+            sourceId: platform.id,
+            dio: _dio,
+            cookieProvider: cookieProvider,
+            guidProvider: guidProvider);
+      case 'kg':
+        return KugouSearchApi(
+            sourceId: platform.id, dio: _dio, cookieProvider: cookieProvider);
+      case 'kw':
+        return KuwoSearchApi(
+            sourceId: platform.id, dio: _dio, cookieProvider: cookieProvider);
+      case 'mg':
+        return MiguSearchApi(
+            sourceId: platform.id, dio: _dio, cookieProvider: cookieProvider);
+      default:
+        throw StateError('Unknown builtin platform: ${platform.sourceKey}');
+    }
   }
 
   /// 获取或创建音源的后端实例
@@ -117,8 +188,26 @@ class SourceManager {
 
   /// 通过脚本内容导入
   Future<SourceImportResult> importFromScript(String scriptSource) async {
+    final trimmed = scriptSource.trim();
+    if (trimmed.isEmpty) {
+      return SourceImportResult.fail('脚本内容为空');
+    }
+    if (_isHttpUrl(trimmed)) {
+      return importFromUrl(trimmed);
+    }
+    return _importFromScriptContent(scriptSource);
+  }
+
+  Future<SourceImportResult> _importFromScriptContent(
+    String scriptSource,
+  ) async {
     if (scriptSource.trim().isEmpty) {
       return SourceImportResult.fail('脚本内容为空');
+    }
+    if (!_looksLikeSourceScript(scriptSource)) {
+      return SourceImportResult.fail(
+        '内容不是有效的 LX 音源脚本，请确认粘贴的是脚本内容而不是 URL',
+      );
     }
 
     // 重复检测
@@ -180,29 +269,41 @@ class SourceManager {
 
   /// 通过URL导入
   Future<SourceImportResult> importFromUrl(String url) async {
-    final normalizedUrl = _normalizeUrl(url);
+    final candidates = importUrlCandidates(url);
 
-    // 下载脚本
-    String scriptSource;
-    try {
-      final response = await _dio.get(
-        normalizedUrl,
-        options: Options(
-          responseType: ResponseType.plain,
-          receiveTimeout: const Duration(seconds: 60),
-        ),
-      );
-      scriptSource = response.data?.toString() ?? '';
-      if (scriptSource.isEmpty) {
-        return SourceImportResult.fail('下载内容为空');
+    String scriptSource = '';
+    final errors = <String>[];
+    for (final candidate in candidates) {
+      try {
+        final response = await _dio.get(
+          candidate,
+          options: Options(
+            responseType: ResponseType.plain,
+            connectTimeout: const Duration(seconds: 8),
+            receiveTimeout: const Duration(seconds: 10),
+            sendTimeout: const Duration(seconds: 10),
+            validateStatus: (status) =>
+                status != null && status >= 200 && status < 300,
+          ),
+        );
+        scriptSource = response.data?.toString() ?? '';
+        if (scriptSource.trim().isEmpty) {
+          errors.add('$candidate: 内容为空');
+          continue;
+        }
+        break;
+      } on DioException catch (e) {
+        errors.add('$candidate: ${_formatDioError(e)}');
+      } catch (e) {
+        errors.add('$candidate: $e');
       }
-    } on DioException catch (e) {
-      return SourceImportResult.fail(_formatDioError(e));
-    } catch (e) {
-      return SourceImportResult.fail('下载失败: $e');
     }
 
-    return importFromScript(scriptSource);
+    if (scriptSource.trim().isEmpty) {
+      return SourceImportResult.fail('下载失败: ${errors.join('；')}');
+    }
+
+    return _importFromScriptContent(scriptSource);
   }
 
   // ── 管理 ──
@@ -236,7 +337,8 @@ class SourceManager {
 
   // ── 工具 ──
 
-  String _normalizeUrl(String url) {
+  /// 规范化导入 URL：GitHub blob/raw 页面统一转为 raw.githubusercontent.com
+  static String normalizeImportUrl(String url) {
     String normalized = url.trim();
 
     // 补全协议
@@ -244,17 +346,65 @@ class SourceManager {
       normalized = 'https://$normalized';
     }
 
-    // GitHub blob → raw
-    final blobMatch = RegExp(
-      r'^https?://github\.com/([^/]+)/([^/]+)/blob/(.+)$',
+    final githubMatch = RegExp(
+      r'^https?://github\.com/([^/]+)/([^/]+)/(?:blob|raw)/(.+)$',
       caseSensitive: false,
     ).firstMatch(normalized);
-    if (blobMatch != null) {
+    if (githubMatch != null) {
       normalized =
-          'https://raw.githubusercontent.com/${blobMatch.group(1)}/${blobMatch.group(2)}/${blobMatch.group(3)}';
+          'https://raw.githubusercontent.com/${githubMatch.group(1)}/${githubMatch.group(2)}/${githubMatch.group(3)}';
     }
 
     return normalized;
+  }
+
+  /// 生成下载候选：原地址优先，GitHub 地址追加 jsDelivr 镜像。
+  static List<String> importUrlCandidates(String url) {
+    final normalized = normalizeImportUrl(url);
+    final candidates = <String>[normalized];
+    final mirror = _jsDelivrMirror(normalized);
+    if (mirror != null && !candidates.contains(mirror)) {
+      candidates.add(mirror);
+    }
+    return candidates;
+  }
+
+  static String? _jsDelivrMirror(String url) {
+    final rawMatch = RegExp(
+      r'^https://raw\.githubusercontent\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$',
+      caseSensitive: false,
+    ).firstMatch(url);
+    if (rawMatch == null) return null;
+
+    final owner = rawMatch.group(1);
+    final repo = rawMatch.group(2);
+    final ref = rawMatch.group(3);
+    final path = rawMatch.group(4);
+    return 'https://cdn.jsdelivr.net/gh/$owner/$repo@$ref/$path';
+  }
+
+  static final RegExp _httpUrlPattern =
+      RegExp(r'^https?://', caseSensitive: false);
+
+  static bool _isHttpUrl(String text) => _httpUrlPattern.hasMatch(text);
+
+  static bool _looksLikeSourceScript(String source) {
+    if (source.length >= 1024) return true;
+    final lower = source.toLowerCase();
+    const markers = [
+      '@name',
+      'lx.',
+      'lx-music',
+      'module.exports',
+      'sourceregister',
+      'event_names',
+      'httpfetch',
+      'search',
+      'musicurl',
+      'function',
+      '=>',
+    ];
+    return markers.any(lower.contains);
   }
 
   String _formatDioError(DioException e) {

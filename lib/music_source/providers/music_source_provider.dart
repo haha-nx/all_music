@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/music_source.dart';
+import '../../providers/account_center_provider.dart';
 import '../../services/storage_service.dart';
 import '../core/lx_bridge.dart';
 import '../core/music_backend.dart';
@@ -12,7 +13,7 @@ import '../services/source_manager.dart';
 
 /// 全局 Dio 实例
 final _dioProvider = Provider<Dio>((ref) {
-  return Dio(BaseOptions(
+  final dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 30),
     headers: {
@@ -20,8 +21,20 @@ final _dioProvider = Provider<Dio>((ref) {
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
     },
   ));
+  // Strip trailing semicolons from content-type headers to prevent
+  // http_parser MediaType.parse FormatException warnings (e.g. 'text/plain; charset=utf-8;')
+  dio.interceptors.add(InterceptorsWrapper(
+    onResponse: (response, handler) {
+      final ct = response.headers.value('content-type');
+      if (ct != null && ct.endsWith(';')) {
+        response.headers.remove('content-type', ct);
+        response.headers.add('content-type', ct.replaceAll(RegExp(r';\s*$'), ''));
+      }
+      handler.next(response);
+    },
+  ));
+  return dio;
 });
-
 // ═══════════════════════════════════════
 // Source Provider（唯一音源数据源）
 // ═══════════════════════════════════════
@@ -36,7 +49,12 @@ enum SourceReadyState { loading, ready, error }
 final sourceListProvider =
     StateNotifierProvider<SourceListNotifier, List<SourceDefinition>>((ref) {
   final dio = ref.watch(_dioProvider);
-  return SourceListNotifier(dio);
+  final account = ref.watch(accountCenterProvider);
+  return SourceListNotifier(
+    dio,
+    cookieProvider: (key) => account[key]?.cookie ?? '',
+    guidProvider: (key) => account[key]?.guid ?? '',
+  );
 });
 
 class SourceListNotifier extends StateNotifier<List<SourceDefinition>> {
@@ -45,8 +63,17 @@ class SourceListNotifier extends StateNotifier<List<SourceDefinition>> {
   SourceReadyState _readyState = SourceReadyState.loading;
   String? _readyError;
 
-  SourceListNotifier(Dio dio)
-      : _manager = SourceManager(dio),
+  SourceListNotifier(
+    Dio dio, {
+    bool registerBuiltins = true,
+    String? Function(String platformKey)? cookieProvider,
+    String? Function(String platformKey)? guidProvider,
+  }) : _manager = SourceManager(
+          dio,
+          registerBuiltins: registerBuiltins,
+          cookieProvider: cookieProvider,
+          guidProvider: guidProvider,
+        ),
         super([]) {
     _manager.onChanged = (sources) {
       state = sources;
@@ -135,7 +162,10 @@ class SourceListNotifier extends StateNotifier<List<SourceDefinition>> {
 
   Future<void> _save() async {
     await storageService.saveSources(
-      _manager.sources.map(_toMusicSource).toList(),
+      _manager.sources
+          .where((s) => s.origin != SourceOrigin.builtin)
+          .map(_toMusicSource)
+          .toList(),
     );
   }
 
