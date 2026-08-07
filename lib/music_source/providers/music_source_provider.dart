@@ -49,6 +49,9 @@ enum SourceReadyState { loading, ready, error }
 final sourceListProvider =
     StateNotifierProvider<SourceListNotifier, List<SourceDefinition>>((ref) {
   final dio = ref.watch(_dioProvider);
+  // 账号登录态变化时重建 SourceListNotifier（watch）：
+  // 登录/登出是低频操作，重建成本（重新加载音源 + 预初始化脚本引擎）
+  // 可接受，但保证内置后端的 cookieProvider 闭包拿到最新登录态。
   final account = ref.watch(accountCenterProvider);
   return SourceListNotifier(
     dio,
