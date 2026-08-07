@@ -8,6 +8,7 @@ import '../../models/song.dart';
 import '../../providers/player_provider.dart';
 import '../../providers/search_provider.dart';
 import '../../music_source/models/music_track.dart';
+import '../../music_source/builtin/builtin_platforms.dart';
 import '../../music_source/providers/music_source_provider.dart';
 import '../../widgets/album_art.dart';
 import '../../widgets/song_context_menu.dart';
@@ -322,15 +323,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           ),
                         ],
                       ),
-                      title: Text(
-                        song.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: isPlaying ? AppColors.primary : AppColors.textPrimary,
-                        ),
+                      title: Row(
+                        children: [
+                          _platformBadge(song.sourceKey),
+                          Expanded(
+                            child: Text(
+                              song.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                color: isPlaying ? AppColors.primary : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       subtitle: Text(
                         song.artist,
@@ -371,6 +379,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   // ──── 搜索类型切换 ────
+
+  /// 平台徽标（搜索结果标注音源）
+  Widget _platformBadge(String? sourceKey) {
+    final name = sourceKey == null ? '' : kSourceKeyNames[sourceKey] ?? '';
+    if (name.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(right: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        name,
+        style: TextStyle(fontSize: 10, color: AppColors.primary),
+      ),
+    );
+  }
 
   Widget _buildTypeChips() {
     final type = ref.watch(searchProvider.select((s) => s.searchType));
