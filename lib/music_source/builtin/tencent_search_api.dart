@@ -104,6 +104,15 @@ class TencentSearchApi extends PlatformSearchApi {
     final songmid = track.id;
     if (uin.isEmpty || guid.isEmpty || songmid.isEmpty) return null;
 
+    // 音质 → 文件名前缀：不传 filename 服务器只会给 C400 试听（64k 前奏），
+    // 必须显式声明 M500(128k)/M800(320k)/F000(无损) 才返回会员原曲
+    final prefix = switch (quality) {
+      'flac' => 'F000',
+      '320k' => 'M800',
+      _ => 'M500',
+    };
+    final filename = '$prefix$songmid.${prefix == 'F000' ? 'flac' : 'm4a'}';
+
     final req = {
       'req_0': {
         'module': 'vkey.GetVkeyServer',
@@ -114,6 +123,7 @@ class TencentSearchApi extends PlatformSearchApi {
           'songtype': [0],
           'uin': uin,
           'loginflag': 1,
+          'filename': [filename],
           'platform': '20',
         },
       },
@@ -146,6 +156,12 @@ class TencentSearchApi extends PlatformSearchApi {
       final purl = midUrlInfo.isEmpty
           ? ''
           : (midUrlInfo.first['purl']?.toString() ?? '');
+      // C400 前缀 = 64k 试听（未识别会员），此时宁可返回 null 走降级链，
+      // 也不要给用户试听版冒充原曲。purl 形如 C400xxx.m4a 或路径/C400xxx.m4a
+      final purlPath = purl.split('?').first;
+      if (purlPath.contains('C400')) {
+        return null;
+      }
       if (sip.isNotEmpty && purl.isNotEmpty) {
         return sip.first + purl;
       }

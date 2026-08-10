@@ -7,6 +7,10 @@ import '../music_source/core/track_adapter.dart';
 import '../music_source/models/music_track.dart';
 import '../music_source/providers/music_source_provider.dart';
 import '../music_source/services/search_aggregator.dart';
+import 'account_center_provider.dart';
+
+/// 内置平台 sourceKey 集合：用于搜索过滤（未登录的内置源跳过）
+const Set<String> kBuiltinSourceKeys = {'wy', 'tx', 'kg', 'kw', 'mg'};
 
 /// 搜索状态
 class SearchState {
@@ -131,8 +135,31 @@ class SearchNotifier extends StateNotifier<SearchState> {
         return;
       }
 
+      // 只搜索已登录账号的平台：内置源（wy/tx/kg/kw/mg）若未登录则跳过；
+      // 脚本源（LxBridge）不受账号限制，保留参与搜索。
+      final loggedInKeys = ref
+          .read(accountCenterProvider)
+          .entries
+          .where((e) => e.value.isLoggedIn)
+          .map((e) => e.key)
+          .toSet();
+      final filteredBridges = searchBridges.where((b) {
+        final keys = b.searchKeys;
+        final hasBuiltin = keys.any(kBuiltinSourceKeys.contains);
+        if (!hasBuiltin) return true; // 脚本源保留
+        return keys.any(loggedInKeys.contains);
+      }).toList();
+      if (filteredBridges.isEmpty) {
+        state = state.copyWith(
+          isLoading: false,
+          hasSearched: true,
+          error: '没有已登录账号的音源，请先在设置 → 账号中心登录',
+        );
+        return;
+      }
+
       final tracks = await SearchAggregator.search(
-        searchBridges,
+        filteredBridges,
         keyword,
         limit: 20,
         type: type,
