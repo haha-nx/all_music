@@ -7,12 +7,13 @@ import '../../services/cookie_store.dart';
 import 'platform_login_screen.dart';
 
 /// 各平台登录页 URL 与 cookie 域映射（sourceKey → 登录信息）
+/// loginUrl 用 PC 版登录入口（配合桌面 UA），cookieUrl 是 cookie 所属域
 const Map<String, ({String loginUrl, String cookieUrl})> kPlatformLoginInfo = {
-  'wy': (loginUrl: 'https://music.163.com/', cookieUrl: 'https://music.163.com'),
+  'wy': (loginUrl: 'https://music.163.com/#/login', cookieUrl: 'https://music.163.com'),
   'tx': (loginUrl: 'https://y.qq.com/', cookieUrl: 'https://y.qq.com'),
   'kg': (loginUrl: 'https://www.kugou.com/', cookieUrl: 'https://www.kugou.com'),
   'kw': (loginUrl: 'https://www.kuwo.cn/', cookieUrl: 'https://www.kuwo.cn'),
-  'mg': (loginUrl: 'https://www.migu.cn/', cookieUrl: 'https://www.migu.cn'),
+  'mg': (loginUrl: 'https://music.migu.cn/', cookieUrl: 'https://www.migu.cn'),
 };
 
 /// 账号中心：管理各内置平台的登录态

@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../services/cookie_bridge.dart';
 
+/// 桌面版 Chrome UA：让各平台返回 PC 版页面（移动 UA 只会给下载 App 引导页，无登录入口）
+const String kDesktopUserAgent =
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+    '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
 /// 平台登录页：内嵌 WebView 打开官方登录页，登录完成后点「完成」抓 cookie
 class PlatformLoginScreen extends StatefulWidget {
   final String platformKey;
@@ -29,6 +34,7 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent(kDesktopUserAgent)
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (_) {},
       ))
