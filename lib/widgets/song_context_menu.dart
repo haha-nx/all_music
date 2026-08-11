@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../config/constants.dart';
 import '../models/song.dart';
 import '../providers/favorites_provider.dart';
@@ -38,9 +39,9 @@ class SongContextMenu extends ConsumerWidget {
           children: [
             // 拖拽条
             Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(top: 8, bottom: 16),
+              width: 36.w,
+              height: 4.w,
+              margin: EdgeInsets.only(top: 8.w, bottom: 16.w),
               decoration: BoxDecoration(
                 color: AppColors.textTertiary,
                 borderRadius: BorderRadius.circular(2),
@@ -49,15 +50,15 @@ class SongContextMenu extends ConsumerWidget {
 
             // 歌曲信息头
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: EdgeInsets.symmetric(horizontal: 20.w),
               child: Row(
                 children: [
                   AlbumArt(
                     coverUrl: song.albumCover,
-                    size: 48,
+                    size: 48.w,
                     borderRadius: 12,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,8 +67,8 @@ class SongContextMenu extends ConsumerWidget {
                           song.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
                           ),
@@ -76,8 +77,8 @@ class SongContextMenu extends ConsumerWidget {
                           song.artist,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -88,12 +89,12 @@ class SongContextMenu extends ConsumerWidget {
               ),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: 16.w),
             Divider(
               color: AppColors.textTertiary.withValues(alpha: 0.2),
               height: 1,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4.w),
 
             // 操作列表
             _MenuItem(
@@ -143,7 +144,7 @@ class SongContextMenu extends ConsumerWidget {
                 _showPlaylistPicker(context, ref, song);
               },
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
           ],
         ),
       ),
@@ -231,22 +232,22 @@ class SongContextMenu extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(top: 8, bottom: 12),
+                width: 36.w,
+                height: 4.w,
+                margin: EdgeInsets.only(top: 8.w, bottom: 12.w),
                 decoration: BoxDecoration(
                   color: AppColors.textTertiary,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 4.w, 20.w, 8.w),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     '添加到歌单',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                     ),
@@ -254,8 +255,8 @@ class SongContextMenu extends ConsumerWidget {
                 ),
               ),
               if (playlists.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(24),
+                Padding(
+                  padding: EdgeInsets.all(24.w),
                   child: Text(
                     '暂无歌单，请先创建一个',
                     style: TextStyle(color: AppColors.textSecondary),
@@ -273,8 +274,8 @@ class SongContextMenu extends ConsumerWidget {
                       );
                       return ListTile(
                         leading: Container(
-                          width: 40,
-                          height: 40,
+                          width: 40.w,
+                          height: 40.w,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
                             color: AppColors.primary.withValues(alpha: 0.15),
@@ -286,7 +287,7 @@ class SongContextMenu extends ConsumerWidget {
                             color: alreadyIn
                                 ? AppColors.primary
                                 : AppColors.textSecondary,
-                            size: 20,
+                            size: 20.sp,
                           ),
                         ),
                         title: Text(
@@ -299,9 +300,9 @@ class SongContextMenu extends ConsumerWidget {
                         ),
                         subtitle: Text(
                           '${playlist.songCount} 首',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textTertiary,
-                            fontSize: 12,
+                            fontSize: 12.sp,
                           ),
                         ),
                         onTap: alreadyIn
@@ -327,7 +328,7 @@ class SongContextMenu extends ConsumerWidget {
                     },
                   ),
                 ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
             ],
           ),
         ),
@@ -350,10 +351,10 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: AppColors.textPrimary, size: 22),
+      leading: Icon(icon, color: AppColors.textPrimary, size: 22.sp),
       title: Text(
         title,
-        style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+        style: TextStyle(color: AppColors.textPrimary, fontSize: 15.sp),
       ),
       onTap: onTap,
     );

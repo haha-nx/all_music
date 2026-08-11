@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../config/constants.dart';
 import '../models/song.dart';
@@ -29,9 +30,9 @@ class LiquidBottomBar extends ConsumerWidget {
     final song = playerData.song;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 24),
+      padding: EdgeInsets.symmetric(horizontal: 36.w, vertical: 24.w),
       child: SizedBox(
-        height: 60,
+        height: 60.w,
         child: Row(
           children: [
             // ======== 左：音乐库圆形按钮 ========
@@ -40,7 +41,7 @@ class LiquidBottomBar extends ConsumerWidget {
               isSelected: selectedTab == 0,
               onTap: () => onTabChanged(0),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             // ======== 中：播放胶囊 / 空状态 ========
             Expanded(
               child: song != null
@@ -53,7 +54,7 @@ class LiquidBottomBar extends ConsumerWidget {
                     )
                   : _EmptyCapsule(),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: 16.w),
             // ======== 右：搜索圆形按钮 ========
             _CircleNavButton(
               icon: Icons.search_rounded,
@@ -84,7 +85,7 @@ class PlayerCapsuleBar extends ConsumerWidget {
     if (song == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.w),
       child: _PlayerCapsule(
         song: song,
         isPlaying: data.isPlaying,
@@ -118,12 +119,12 @@ class _CircleNavButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
-          width: 60,
-          height: 60,
+          width: 60.w,
+          height: 60.w,
           decoration: const BoxDecoration(shape: BoxShape.circle),
           child: Icon(
             icon,
-            size: 22,
+            size: 22.sp,
             color: isSelected ? AppColors.primary : AppColors.textSecondary,
           ),
         ),
@@ -155,18 +156,18 @@ class _PlayerCapsule extends StatelessWidget {
         borderRadius: 28,
         tintColor: AppColors.surfaceLight,
         child: Container(
-          height: 60,
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          height: 60.w,
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.w),
           child: Row(
             children: [
               // 封面缩略图
               AlbumArt(
                 coverUrl: song.albumCover,
-                size: 32,
+                size: 32.w,
                 borderRadius: 8,
                 isPlaying: isPlaying,
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: 10.w),
 
               // 歌曲信息
               Expanded(
@@ -178,8 +179,8 @@ class _PlayerCapsule extends StatelessWidget {
                       song.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
@@ -189,14 +190,14 @@ class _PlayerCapsule extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 10.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 6),
+              SizedBox(width: 6.w),
 
               // 播放/暂停按钮
               GestureDetector(
@@ -206,8 +207,8 @@ class _PlayerCapsule extends StatelessWidget {
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  width: 34,
-                  height: 34,
+                  width: 34.w,
+                  height: 34.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isPlaying
@@ -217,7 +218,7 @@ class _PlayerCapsule extends StatelessWidget {
                   child: Icon(
                     isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                     color: AppColors.primary,
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
               ),
@@ -237,12 +238,12 @@ class _EmptyCapsule extends StatelessWidget {
       blur: 8,
       borderRadius: 28,
       tintColor: AppColors.surfaceLight,
-      child: const SizedBox(
-        height: 60,
+      child: SizedBox(
+        height: 60.w,
         child: Center(
           child: Text(
             '选择一首歌开始播放',
-            style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 11.sp, color: AppColors.textTertiary),
           ),
         ),
       ),
