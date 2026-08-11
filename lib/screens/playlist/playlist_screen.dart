@@ -102,10 +102,9 @@ class PlaylistScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      GlassPanel(
-                        blur: 10,
-                        borderRadius: 12,
-                        tintColor: AppColors.primary.withValues(alpha: 0.3),
+                      Material(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        shape: const StadiumBorder(),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -137,7 +136,7 @@ class PlaylistScreen extends ConsumerWidget {
                       const SizedBox(width: 12),
                       GlassPanel(
                         blur: 10,
-                        borderRadius: 12,
+                        borderRadius: 20,
                         tintColor: AppColors.surfaceLight,
                         child: const Padding(
                           padding: EdgeInsets.all(10),
@@ -198,7 +197,7 @@ class PlaylistScreen extends ConsumerWidget {
                             backgroundColor: Colors.transparent,
                             child: GlassPanel(
                               blur: 20,
-                              borderRadius: 20,
+                              borderRadius: 24,
                               tintColor: AppColors.surfaceDark,
                               child: Padding(
                                 padding: const EdgeInsets.all(24),
@@ -240,7 +239,7 @@ class PlaylistScreen extends ConsumerWidget {
                                         const SizedBox(width: 12),
                                         GlassPanel(
                                           blur: 10,
-                                          borderRadius: 12,
+                                          borderRadius: 20,
                                           tintColor: Colors.red.withValues(
                                             alpha: 0.3,
                                           ),
@@ -283,7 +282,7 @@ class PlaylistScreen extends ConsumerWidget {
                         ),
                         child: GlassPanel(
                           blur: 8,
-                          borderRadius: 14,
+                          borderRadius: 16,
                           tintColor: isPlaying
                               ? AppColors.primary.withValues(alpha: 0.1)
                               : AppColors.surfaceLight,
@@ -313,7 +312,7 @@ class PlaylistScreen extends ConsumerWidget {
                                   AlbumArt(
                                     coverUrl: song.albumCover,
                                     size: 44,
-                                    borderRadius: 8,
+                                    borderRadius: 12,
                                     isPlaying: isPlaying,
                                   ),
                                 ],
