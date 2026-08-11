@@ -31,7 +31,7 @@ class FavoritesScreen extends ConsumerWidget {
                 alignment: Alignment.centerLeft,
                 child: GlassPanel(
                   blur: 8,
-                  borderRadius: 20,
+                  borderRadius: 24,
                   tintColor: AppColors.surfaceLight,
                   child: IconButton(
                     icon: const Icon(
@@ -54,7 +54,7 @@ class FavoritesScreen extends ConsumerWidget {
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -94,10 +94,9 @@ class FavoritesScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8),
                 child: Row(
                   children: [
-                    GlassPanel(
-                      blur: 10,
-                      borderRadius: 12,
-                      tintColor: AppColors.primary.withValues(alpha: 0.3),
+                    Material(
+                      color: AppColors.primary.withValues(alpha: 0.3),
+                      shape: const StadiumBorder(),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                         child: GestureDetector(
@@ -116,7 +115,7 @@ class FavoritesScreen extends ConsumerWidget {
                     const SizedBox(width: 12),
                     GlassPanel(
                       blur: 10,
-                      borderRadius: 12,
+                      borderRadius: 20,
                       tintColor: AppColors.surfaceLight,
                       child: const Padding(
                         padding: EdgeInsets.all(10),
@@ -155,7 +154,7 @@ class FavoritesScreen extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
                     child: GlassPanel(
                       blur: 8,
-                      borderRadius: 14,
+                      borderRadius: 20,
                       tintColor: isPlaying
                           ? AppColors.primary.withValues(alpha: 0.1)
                           : AppColors.surfaceLight,
@@ -180,7 +179,7 @@ class FavoritesScreen extends ConsumerWidget {
                             AlbumArt(
                               coverUrl: song.albumCover,
                               size: 44,
-                              borderRadius: 8,
+                              borderRadius: 12,
                               isPlaying: isPlaying,
                             ),
                           ],
