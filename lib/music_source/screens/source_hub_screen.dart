@@ -99,7 +99,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       isScrollControlled: true,
       backgroundColor: AppColors.surfaceDark,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return Padding(
@@ -152,7 +152,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   filled: true,
                   fillColor: AppColors.backgroundDark,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: AppColors.textTertiary),
                   ),
                 ),
@@ -164,9 +164,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   onPressed: () async {
                     final script = controller.text.trim();
@@ -205,7 +203,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       isScrollControlled: true,
       backgroundColor: AppColors.surfaceDark,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return Padding(
@@ -253,7 +251,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   filled: true,
                   fillColor: AppColors.backgroundDark,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                     borderSide: BorderSide(color: AppColors.textTertiary),
                   ),
                 ),
@@ -265,9 +263,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                    shape: const StadiumBorder(),
                   ),
                   onPressed: () async {
                     final url = controller.text.trim();
@@ -339,7 +335,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       builder: (_) => Center(
         child: GlassPanel(
           blur: 16,
-          borderRadius: 20,
+          borderRadius: 24,
           tintColor: AppColors.surfaceDark,
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -460,7 +456,7 @@ class _SourceCard extends StatelessWidget {
                       color: enabled
                           ? AppColors.primary.withValues(alpha: 0.15)
                           : AppColors.textTertiary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       enabled ? Icons.music_note : Icons.music_note_outlined,
@@ -583,7 +579,7 @@ class _CapabilityChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         '${capability.name} (${capability.actions.join('/')})',
@@ -631,9 +627,7 @@ class _EmptyState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                shape: const StadiumBorder(),
               ),
             ),
           ],

@@ -50,7 +50,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                     children: [
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 20,
+                        borderRadius: 24,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: const Icon(
@@ -73,7 +73,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                       const Spacer(),
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 20,
+                        borderRadius: 24,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: const Icon(
@@ -226,12 +226,12 @@ class _ListCard extends StatelessWidget {
         children: [
           GlassPanel(
             blur: 10,
-            borderRadius: 16,
+            borderRadius: 20,
             tintColor: AppColors.surfaceLight,
             child: AspectRatio(
               aspectRatio: 1,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 child: info.picUrl != null && info.picUrl!.isNotEmpty
                     ? Image.network(
                         info.picUrl!,
@@ -318,7 +318,7 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 20),
           GlassPanel(
             blur: 10,
-            borderRadius: 14,
+            borderRadius: 20,
             tintColor: AppColors.primary.withValues(alpha: 0.2),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),

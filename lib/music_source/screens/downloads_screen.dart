@@ -28,7 +28,7 @@ class DownloadsScreen extends ConsumerWidget {
                 children: [
                   GlassPanel(
                     blur: 8,
-                    borderRadius: 20,
+                    borderRadius: 24,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new_rounded,
@@ -49,7 +49,7 @@ class DownloadsScreen extends ConsumerWidget {
                   if (tasks.isNotEmpty)
                     GlassPanel(
                       blur: 8,
-                      borderRadius: 20,
+                      borderRadius: 24,
                       tintColor: AppColors.surfaceLight,
                       child: IconButton(
                         icon: const Icon(Icons.delete_sweep_rounded,
@@ -133,7 +133,7 @@ class _DownloadTaskTile extends ConsumerWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: 44,
                   height: 44,
@@ -189,7 +189,7 @@ class _DownloadTaskTile extends ConsumerWidget {
                     if (isDownloading || task.status == DownloadStatus.pending) ...[
                       const SizedBox(height: 6),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: BorderRadius.circular(12),
                         child: LinearProgressIndicator(
                           value: task.progress,
                           minHeight: 4,

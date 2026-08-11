@@ -213,7 +213,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
             const SizedBox(height: 8),
             GlassPanel(
               blur: 10,
-              borderRadius: 12,
+              borderRadius: 14,
               tintColor: AppColors.surfaceLight,
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -243,7 +243,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
             const SizedBox(height: 8),
             GlassPanel(
               blur: 10,
-              borderRadius: 12,
+              borderRadius: 14,
               tintColor: AppColors.surfaceLight,
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -321,7 +321,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
         Expanded(
           child: GlassPanel(
             blur: 10,
-            borderRadius: 12,
+            borderRadius: 14,
             tintColor: AppColors.surfaceLight,
             child: TextField(
               controller: _keywordController,
@@ -343,9 +343,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: const StadiumBorder(),
             ),
             onPressed: _loading ? null : _testSearch,
             child: const Text('搜索', style: TextStyle(color: Colors.white)),
@@ -360,7 +358,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
       padding: const EdgeInsets.only(bottom: 6),
       child: GlassPanel(
         blur: 8,
-        borderRadius: 12,
+        borderRadius: 14,
         tintColor: AppColors.surfaceLight,
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -368,7 +366,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
             children: [
               // 封面
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: 44,
                   height: 44,

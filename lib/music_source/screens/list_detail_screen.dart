@@ -155,7 +155,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         children: [
           GlassPanel(
             blur: 8,
-            borderRadius: 20,
+            borderRadius: 24,
             tintColor: AppColors.surfaceLight,
             child: IconButton(
               icon: const Icon(
@@ -256,7 +256,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 AlbumArt(
                   coverUrl: song.albumCover,
                   size: 44,
-                  borderRadius: 8,
+                  borderRadius: 12,
                   isPlaying: isPlaying,
                 ),
                 const SizedBox(width: 12),
@@ -317,10 +317,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         children: [
           GlassPanel(
             blur: 12,
-            borderRadius: 16,
+            borderRadius: 20,
             tintColor: AppColors.surfaceLight,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20),
               child:
                   widget.listInfo.picUrl != null &&
                       widget.listInfo.picUrl!.isNotEmpty
@@ -362,7 +362,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   onTap: () => _playAll(tracks),
                   child: GlassPanel(
                     blur: 10,
-                    borderRadius: 12,
+                    borderRadius: 20,
                     tintColor: AppColors.primary.withValues(alpha: 0.25),
                     child: const Padding(
                       padding: EdgeInsets.symmetric(
