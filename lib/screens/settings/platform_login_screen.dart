@@ -159,13 +159,14 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
         actions: [
           Padding(
             padding: EdgeInsets.only(right: 12.w),
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: const StadiumBorder(),
-                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                minimumSize: Size(0, 40.w),
+            child: TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               onPressed: () async {
