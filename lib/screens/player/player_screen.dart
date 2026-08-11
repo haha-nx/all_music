@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../models/lyric.dart';
@@ -65,14 +66,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(child: Text(error, style: const TextStyle(fontSize: 14))),
+            Icon(Icons.error_outline, color: Colors.white, size: 20.sp),
+            SizedBox(width: 12.w),
+            Expanded(child: Text(error, style: TextStyle(fontSize: 14.sp))),
           ],
         ),
         backgroundColor: AppColors.error.withValues(alpha: 0.9),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.all(16),
+        margin: EdgeInsets.all(16.w),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         action: SnackBarAction(
@@ -92,7 +93,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final mainTp = TextPainter(
       text: TextSpan(
         text: line.text,
-        style: TextStyle(fontSize: mainSize, height: 1.4),
+        style: TextStyle(fontSize: (mainSize).sp, height: 1.4),
       ),
       textDirection: TextDirection.ltr,
       textScaler: scaler,
@@ -103,7 +104,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       final trTp = TextPainter(
         text: TextSpan(
           text: tr,
-          style: TextStyle(fontSize: trSize, height: 1.3),
+          style: TextStyle(fontSize: (trSize).sp, height: 1.3),
         ),
         textDirection: TextDirection.ltr,
         textScaler: scaler,
@@ -189,7 +190,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               children: [
                 // 顶栏
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
                   ),
                   child: _buildTopBar(playerState),
@@ -198,9 +199,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 // 播放错误提示（内联）
                 if (playerState.playbackError != null)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       AppSizes.paddingH,
-                      8,
+                      8.w,
                       AppSizes.paddingH,
                       0,
                     ),
@@ -208,37 +209,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       playerState.playbackError!,
                     ),
                   ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.w),
 
                 // 中间内容：歌曲信息 + 歌词
                 Expanded(child: _buildCenterContent(playerState)),
 
                 // 进度条
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
                   ),
                   child: _buildProgressBar(playerState),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4.w),
 
                 // 控制按钮
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
                   ),
                   child: _buildControls(playerState),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
 
                 // 底部功能按钮
                 Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
                   ),
                   child: _buildBottomActions(isFavorited, playerState),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
               ],
             ),
           ),
@@ -324,14 +325,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, size: 32.sp),
           color: _inactiveColor(state),
           onPressed: () => context.pop(),
         ),
         Text(
           '正在播放',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w600,
             color: AppColors.textSecondary,
           ),
@@ -340,7 +341,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         PopupMenuButton<String>(
           icon: Icon(
             Icons.more_horiz_rounded,
-            size: 28,
+            size: 28.sp,
             color: _inactiveColor(state),
           ),
           color: AppColors.surfaceDark,
@@ -358,16 +359,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               value: 'speed',
               child: Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.speed_rounded,
-                    size: 18,
+                    size: 18.sp,
                     color: AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   Text(
                     '播放速度  ${_formatSpeed(state.speed)}x',
-                    style: const TextStyle(
-                      fontSize: 14,
+                    style: TextStyle(
+                      fontSize: 14.sp,
                       color: AppColors.textPrimary,
                     ),
                   ),
@@ -380,16 +381,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 children: [
                   Icon(
                     hasSleep ? Icons.timer_off_rounded : Icons.timer_rounded,
-                    size: 18,
+                    size: 18.sp,
                     color: hasSleep ? _selectedColor : AppColors.textSecondary,
                   ),
-                  const SizedBox(width: 10),
+                  SizedBox(width: 10.w),
                   Text(
                     hasSleep
                         ? '定时关闭  ${SleepTimerOption.format(state.sleepTimerRemaining)}'
                         : '定时关闭',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 14.sp,
                       color: hasSleep ? _selectedColor : AppColors.textPrimary,
                     ),
                   ),
@@ -408,13 +409,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       children: [
         // 左上角：歌曲名 + 歌手
         Padding(
-          padding: const EdgeInsets.fromLTRB(28, 8, 28, 0),
+          padding: EdgeInsets.fromLTRB(28.w, 8.w, 28.w, 0),
           child: Align(
             alignment: Alignment.centerLeft,
             child: _buildSongInfo(state, leftAligned: true),
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.w),
         // 歌词占满剩余空间
         Expanded(child: _buildLyricsView(state)),
       ],
@@ -433,13 +434,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           children: [
             Icon(
               Icons.lyrics_outlined,
-              size: 36,
+              size: 36.sp,
               color: AppColors.textTertiary.withValues(alpha: 0.4),
             ),
-            const SizedBox(height: 12),
-            const Text(
+            SizedBox(height: 12.w),
+            Text(
               '暂无歌词',
-              style: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 14.sp),
             ),
           ],
         ),
@@ -455,9 +456,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
         return ListView.builder(
           controller: _lyricsScrollController,
-          padding: const EdgeInsets.symmetric(
+          padding: EdgeInsets.symmetric(
             vertical: _lyricsEdgePadding,
-            horizontal: 28,
+            horizontal: 28.w,
           ),
           itemCount: state.lyricLines.length,
           itemBuilder: (context, index) {
@@ -487,7 +488,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 350),
                     style: TextStyle(
-                      fontSize: isActive ? 32 : 22,
+                      fontSize: isActive ? 32.sp : 22.sp,
                       fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
                       color: textColor,
                       height: 1.4,
@@ -497,11 +498,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                   // 翻译行（允许换行）
                   if (line.translation != null && line.translation!.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 3),
+                      padding: EdgeInsets.only(top: 3.w),
                       child: AnimatedDefaultTextStyle(
                         duration: const Duration(milliseconds: 350),
                         style: TextStyle(
-                          fontSize: isActive ? 14 : 12,
+                          fontSize: isActive ? 14.sp : 12.sp,
                           fontWeight: FontWeight.normal,
                           color: isActive
                               ? AppColors.textSecondary
@@ -551,7 +552,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         Text(
           song?.name ?? '未在播放',
           style: TextStyle(
-            fontSize: 22,
+            fontSize: 22.sp,
             fontWeight: FontWeight.bold,
             color: _inactiveColor(state),
           ),
@@ -559,11 +560,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           overflow: TextOverflow.ellipsis,
           textAlign: leftAligned ? TextAlign.start : TextAlign.center,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.w),
         Text(
           song?.artist ?? '选择一首歌开始播放',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 15.sp,
             color: _inactiveColor(state).withValues(alpha: 0.72),
           ),
           maxLines: 1,
@@ -587,7 +588,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
           child: LayoutBuilder(
             builder: (context, constraints) {
               final trackWidth = constraints.maxWidth;
@@ -625,14 +626,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   curve: Curves.easeOutCubic,
-                  height: _isDraggingSeekBar ? 44 : 28,
+                  height: _isDraggingSeekBar ? 44.w : 28.w,
                   alignment: Alignment.center,
                   child: Stack(
                     alignment: Alignment.centerLeft,
                     children: [
                       // background track
                       Container(
-                        height: _isDraggingSeekBar ? 8 : 3,
+                        height: _isDraggingSeekBar ? 8.w : 3.w,
                         decoration: BoxDecoration(
                           color: _inactiveColor(state).withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(4),
@@ -642,7 +643,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                       FractionallySizedBox(
                         widthFactor: progress,
                         child: Container(
-                          height: _isDraggingSeekBar ? 8 : 3,
+                          height: _isDraggingSeekBar ? 8.w : 3.w,
                           decoration: BoxDecoration(
                             color: _accent,
                             borderRadius: BorderRadius.circular(4),
@@ -656,8 +657,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                           alignment: Alignment.centerRight,
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 200),
-                            width: _isDraggingSeekBar ? 22 : 14,
-                            height: _isDraggingSeekBar ? 22 : 14,
+                            width: _isDraggingSeekBar ? 22.w : 14.w,
+                            height: _isDraggingSeekBar ? 22.w : 14.w,
                             decoration: BoxDecoration(
                               color: _accent,
                               shape: BoxShape.circle,
@@ -681,21 +682,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
+          padding: EdgeInsets.symmetric(horizontal: 4.w),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 _formatDurationMs(currentMs.toInt()),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: _inactiveColor(state).withValues(alpha: 0.55),
                 ),
               ),
               Text(
                 _formatDuration(state.duration),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   color: _inactiveColor(state).withValues(alpha: 0.55),
                 ),
               ),
@@ -725,7 +726,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               title: Text(
                 '${_formatSpeed(speed)}x',
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 15.sp,
                   fontWeight: (speed - current).abs() < 0.001
                       ? FontWeight.bold
                       : FontWeight.normal,
@@ -735,7 +736,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                 ),
               ),
               trailing: (speed - current).abs() < 0.001
-                  ? Icon(Icons.check_rounded, color: _selectedColor, size: 20)
+                  ? Icon(Icons.check_rounded, color: _selectedColor, size: 20.sp)
                   : null,
               onTap: () {
                 Navigator.pop(context);
@@ -761,8 +762,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               dense: true,
               title: Text(
                 option.label,
-                style: const TextStyle(
-                  fontSize: 15,
+                style: TextStyle(
+                  fontSize: 15.sp,
                   color: AppColors.textPrimary,
                 ),
               ),
@@ -774,9 +775,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           if (active > Duration.zero)
             ListTile(
               dense: true,
-              title: const Text(
+              title: Text(
                 '取消定时',
-                style: TextStyle(fontSize: 15, color: AppColors.error),
+                style: TextStyle(fontSize: 15.sp, color: AppColors.error),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -794,7 +795,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       children: [
         // 上一首
         IconButton(
-          icon: const Icon(Icons.skip_previous_rounded, size: 36),
+          icon: Icon(Icons.skip_previous_rounded, size: 36.sp),
           color: _inactiveColor(state),
           onPressed: () => ref.read(playerProvider.notifier).previous(),
         ),
@@ -806,22 +807,22 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           child: GestureDetector(
             onTap: () => ref.read(playerProvider.notifier).togglePlay(),
             child: Container(
-              width: 64,
-              height: 64,
+              width: 64.w,
+              height: 64.w,
               decoration: const BoxDecoration(shape: BoxShape.circle),
               child: Icon(
                 state.isPlaying
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
                 color: _onAccent,
-                size: 36,
+                size: 36.sp,
               ),
             ),
           ),
         ),
         // 下一首
         IconButton(
-          icon: const Icon(Icons.skip_next_rounded, size: 36),
+          icon: Icon(Icons.skip_next_rounded, size: 36.sp),
           color: _inactiveColor(state),
           onPressed: () => ref.read(playerProvider.notifier).next(),
         ),
@@ -841,7 +842,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             color: isFavorited
                 ? _accent
                 : _inactiveColor(playerState).withValues(alpha: 0.8),
-            size: 24,
+            size: 24.sp,
           ),
           onPressed: () {
             final song = ref.read(playerProvider).currentSong;
@@ -851,7 +852,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           },
         ),
         IconButton(
-          icon: const Icon(Icons.playlist_play_rounded, size: 24),
+          icon: Icon(Icons.playlist_play_rounded, size: 24.sp),
           color: _inactiveColor(playerState).withValues(alpha: 0.8),
           onPressed: () {
             Navigator.push(
@@ -884,7 +885,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       tooltip: '播放模式：$label（点击切换）',
       icon: Icon(
         icon,
-        size: 24,
+        size: 24.sp,
         color: (isShuffle || isOne)
             ? _accent
             : _inactiveColor(state).withValues(alpha: 0.8),
@@ -909,7 +910,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   /// 内联播放错误横幅
   Widget _buildPlaybackErrorBanner(String error) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.w),
       decoration: BoxDecoration(
         color: AppColors.error.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(12),
@@ -920,14 +921,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: AppColors.error, size: 18),
-          const SizedBox(width: 10),
+          Icon(Icons.info_outline, color: AppColors.error, size: 18.sp),
+          SizedBox(width: 10.w),
           Expanded(
             child: Text(
               error,
               style: TextStyle(
                 color: AppColors.error,
-                fontSize: 13,
+                fontSize: 13.sp,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -956,28 +957,28 @@ class _OptionSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 12),
+            SizedBox(height: 12.w),
             Container(
-              width: 36,
-              height: 4,
+              width: 36.w,
+              height: 4.w,
               decoration: BoxDecoration(
                 color: AppColors.textTertiary,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.w),
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: 16.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
               ),
             ),
             ...children,
-            const SizedBox(height: 16),
+            SizedBox(height: 16.w),
           ],
         ),
       ),

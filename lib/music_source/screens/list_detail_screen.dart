@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../config/constants.dart';
 import '../../../providers/player_provider.dart';
@@ -150,7 +151,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, AppSizes.paddingH, 8),
+      padding: EdgeInsets.fromLTRB(12.w, 8.w, AppSizes.paddingH, 8.w),
       child: Row(
         children: [
           GlassPanel(
@@ -158,10 +159,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             borderRadius: 24,
             tintColor: AppColors.surfaceLight,
             child: IconButton(
-              icon: const Icon(
+              icon: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 color: AppColors.textPrimary,
-                size: 18,
+                size: 18.sp,
               ),
               onPressed: () => Navigator.pop(context),
             ),
@@ -171,14 +172,14 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             widget.listInfo.title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 17,
+            style: TextStyle(
+              fontSize: 17.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
           ),
           const Spacer(),
-          const SizedBox(width: 48),
+          SizedBox(width: 48.w),
         ],
       ),
     );
@@ -190,7 +191,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.only(bottom: 120),
+      padding: EdgeInsets.only(bottom: 120.w),
       itemCount: songs.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
@@ -200,12 +201,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         if (index == songs.length + 1) {
           // 底部加载状态：加载中 / 到底
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: EdgeInsets.symmetric(vertical: 16.w),
             child: Center(
               child: _loadingMore
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
+                  ? SizedBox(
+                      width: 22.w,
+                      height: 22.w,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: AppColors.primary,
@@ -217,8 +218,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                           : _hasMore
                           ? '上拉加载更多'
                           : '已显示全部 ${songs.length} 首',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -233,33 +234,33 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           onTap: () => _playAt(tracks, index - 1),
           onLongPress: () => showSongContextMenu(context, ref, song),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
+            padding: EdgeInsets.symmetric(
               horizontal: AppSizes.paddingH,
-              vertical: 6,
+              vertical: 6.w,
             ),
             child: Row(
               children: [
                 SizedBox(
-                  width: 24,
+                  width: 24.w,
                   child: Text(
                     '${index}',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: isPlaying
                           ? AppColors.primary
                           : AppColors.textTertiary,
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                SizedBox(width: 10.w),
                 AlbumArt(
                   coverUrl: song.albumCover,
-                  size: 44,
+                  size: 44.w,
                   borderRadius: 12,
                   isPlaying: isPlaying,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12.w),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,7 +270,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                           color: isPlaying
                               ? AppColors.primary
@@ -280,21 +281,21 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                         song.artist,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8.w),
                 GestureDetector(
                   onTap: () => showSongContextMenu(context, ref, song),
-                  child: const Icon(
+                  child: Icon(
                     Icons.more_horiz_rounded,
                     color: AppColors.textSecondary,
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
               ],
@@ -307,11 +308,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildHero(List<MusicTrack> tracks) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSizes.paddingH,
-        16,
+        16.w,
         AppSizes.paddingH,
-        20,
+        20.w,
       ),
       child: Row(
         children: [
@@ -326,15 +327,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                       widget.listInfo.picUrl!.isNotEmpty
                   ? Image.network(
                       widget.listInfo.picUrl!,
-                      width: 120,
-                      height: 120,
+                      width: 120.w,
+                      height: 120.w,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) => _coverPlaceholder(),
                     )
                   : _coverPlaceholder(),
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16.w),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,31 +344,31 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                   widget.listInfo.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 20,
+                  style: TextStyle(
+                    fontSize: 20.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 6),
+                SizedBox(height: 6.w),
                 Text(
                   widget.listInfo.countText,
-                  style: const TextStyle(
-                    fontSize: 13,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     color: AppColors.textSecondary,
                   ),
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
                 GestureDetector(
                   onTap: () => _playAll(tracks),
                   child: GlassPanel(
                     blur: 10,
                     borderRadius: 20,
                     tintColor: AppColors.primary.withValues(alpha: 0.25),
-                    child: const Padding(
+                    child: Padding(
                       padding: EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 10,
+                        horizontal: 18.w,
+                        vertical: 10.w,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -375,15 +376,15 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                           Icon(
                             Icons.play_arrow_rounded,
                             color: Colors.white,
-                            size: 20,
+                            size: 20.sp,
                           ),
-                          SizedBox(width: 4),
+                          SizedBox(width: 4.w),
                           Text(
                             '播放全部',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                             ),
                           ),
                         ],
@@ -401,8 +402,8 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _coverPlaceholder() {
     return Container(
-      width: 120,
-      height: 120,
+      width: 120.w,
+      height: 120.w,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -413,11 +414,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.leaderboard_rounded,
           color: AppColors.textSecondary,
-          size: 36,
+          size: 36.sp,
         ),
       ),
     );

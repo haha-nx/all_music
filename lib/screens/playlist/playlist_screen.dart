@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/playlist_provider.dart';
@@ -48,7 +49,7 @@ class PlaylistScreen extends ConsumerWidget {
                   ),
                   onPressed: () => context.pop(),
                 ),
-                expandedHeight: 180,
+                expandedHeight: 180.w,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
                   title: Text(
@@ -73,17 +74,17 @@ class PlaylistScreen extends ConsumerWidget {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.queue_music_rounded,
-                            size: 64,
+                            size: 64.sp,
                             color: Colors.white70,
                           ),
-                          const SizedBox(height: 8),
+                          SizedBox(height: 8.w),
                           Text(
                             '${playlist.songCount} 首歌曲',
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white70,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                             ),
                           ),
                         ],
@@ -96,9 +97,9 @@ class PlaylistScreen extends ConsumerWidget {
               // 操作栏
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
-                    vertical: 12,
+                    vertical: 12.w,
                   ),
                   child: Row(
                     children: [
@@ -106,9 +107,9 @@ class PlaylistScreen extends ConsumerWidget {
                         color: AppColors.primary.withValues(alpha: 0.3),
                         shape: const StadiumBorder(),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 10.w,
                           ),
                           child: GestureDetector(
                             onTap: playlist.songs.isNotEmpty
@@ -116,14 +117,14 @@ class PlaylistScreen extends ConsumerWidget {
                                       .read(playerProvider.notifier)
                                       .playPlaylist(playlist.songs)
                                 : null,
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   Icons.play_arrow_rounded,
                                   color: Colors.white,
                                 ),
-                                SizedBox(width: 4),
+                                SizedBox(width: 4.w),
                                 Text(
                                   '播放全部',
                                   style: TextStyle(color: Colors.white),
@@ -133,13 +134,13 @@ class PlaylistScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       GlassPanel(
                         blur: 10,
                         borderRadius: 20,
                         tintColor: AppColors.surfaceLight,
-                        child: const Padding(
-                          padding: EdgeInsets.all(10),
+                        child: Padding(
+                          padding: EdgeInsets.all(10.w),
                           child: Icon(
                             Icons.shuffle_rounded,
                             color: AppColors.textSecondary,
@@ -175,19 +176,19 @@ class PlaylistScreen extends ConsumerWidget {
                       direction: DismissDirection.endToStart,
                       background: Container(
                         alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 24),
-                        margin: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.only(right: 24.w),
+                        margin: EdgeInsets.symmetric(
                           horizontal: AppSizes.paddingH,
-                          vertical: 3,
+                          vertical: 3.w,
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
                           color: Colors.red.withValues(alpha: 0.8),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.delete_rounded,
                           color: Colors.white,
-                          size: 24,
+                          size: 24.sp,
                         ),
                       ),
                       confirmDismiss: (_) async {
@@ -200,29 +201,29 @@ class PlaylistScreen extends ConsumerWidget {
                               borderRadius: 24,
                               tintColor: AppColors.surfaceDark,
                               child: Padding(
-                                padding: const EdgeInsets.all(24),
+                                padding: EdgeInsets.all(24.w),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
                                       '从「${playlist.name}」中移除？',
-                                      style: const TextStyle(
-                                        fontSize: 16,
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
                                         fontWeight: FontWeight.w600,
                                         color: AppColors.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(height: 8),
+                                    SizedBox(height: 8.w),
                                     Text(
                                       '${song.name} - ${song.artist}',
-                                      style: const TextStyle(
-                                        fontSize: 14,
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
                                         color: AppColors.textSecondary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 24),
+                                    SizedBox(height: 24.w),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       children: [
@@ -236,7 +237,7 @@ class PlaylistScreen extends ConsumerWidget {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
+                                        SizedBox(width: 12.w),
                                         GlassPanel(
                                           blur: 10,
                                           borderRadius: 20,
@@ -244,9 +245,9 @@ class PlaylistScreen extends ConsumerWidget {
                                             alpha: 0.3,
                                           ),
                                           child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 20,
-                                              vertical: 10,
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 20.w,
+                                              vertical: 10.w,
                                             ),
                                             child: GestureDetector(
                                               onTap: () =>
@@ -276,9 +277,9 @@ class PlaylistScreen extends ConsumerWidget {
                             .removeSongFromPlaylist(playlistId, song);
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                           horizontal: AppSizes.paddingH,
-                          vertical: 3,
+                          vertical: 3.w,
                         ),
                         child: GlassPanel(
                           blur: 8,
@@ -289,20 +290,20 @@ class PlaylistScreen extends ConsumerWidget {
                           child: Material(
                             color: Colors.transparent,
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 2,
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12.w,
+                                vertical: 2.w,
                               ),
                               leading: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   SizedBox(
-                                    width: 32,
+                                    width: 32.w,
                                     child: Text(
                                       '${index + 1}',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 14.sp,
                                         color: isPlaying
                                             ? AppColors.primary
                                             : AppColors.textTertiary,
@@ -311,7 +312,7 @@ class PlaylistScreen extends ConsumerWidget {
                                   ),
                                   AlbumArt(
                                     coverUrl: song.albumCover,
-                                    size: 44,
+                                    size: 44.w,
                                     borderRadius: 12,
                                     isPlaying: isPlaying,
                                   ),
@@ -322,7 +323,7 @@ class PlaylistScreen extends ConsumerWidget {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 15.sp,
                                   fontWeight: FontWeight.w500,
                                   color: isPlaying
                                       ? AppColors.primary
@@ -333,8 +334,8 @@ class PlaylistScreen extends ConsumerWidget {
                                 song.artist,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 13,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -366,7 +367,7 @@ class PlaylistScreen extends ConsumerWidget {
                   }, childCount: playlist.songs.length),
                 ),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              SliverToBoxAdapter(child: SizedBox(height: 120.w)),
             ],
           ),
           // 底部播放胶囊（无歌曲时自动隐藏）

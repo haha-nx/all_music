@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'account_center_screen.dart';
 import '../../widgets/glass_panel.dart';
@@ -21,7 +22,7 @@ class SettingsScreen extends ConsumerWidget {
         // 返回按钮
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 52, 0, 0),
+            padding: EdgeInsets.fromLTRB(12.w, 52.w, 0, 0),
             child: Align(
               alignment: Alignment.centerLeft,
               child: GlassPanel(
@@ -29,10 +30,10 @@ class SettingsScreen extends ConsumerWidget {
                 borderRadius: 24,
                 tintColor: AppColors.surfaceLight,
                 child: IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.arrow_back_ios_new_rounded,
                     color: AppColors.textPrimary,
-                    size: 18,
+                    size: 18.sp,
                   ),
                   onPressed: () => context.pop(),
                 ),
@@ -44,16 +45,16 @@ class SettingsScreen extends ConsumerWidget {
         // 大标题
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSizes.paddingH,
-              12,
+              12.w,
               AppSizes.paddingH,
-              24,
+              24.w,
             ),
             child: Text(
               '设置',
               style: TextStyle(
-                fontSize: 34,
+                fontSize: 34.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
@@ -68,7 +69,7 @@ class SettingsScreen extends ConsumerWidget {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+            padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
             child: GlassPanel(
               blur: 12,
               borderRadius: AppSizes.cardBorderRadius,
@@ -98,7 +99,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+          padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
           child: GlassPanel(
             blur: 12,
             borderRadius: AppSizes.cardBorderRadius,
@@ -110,29 +111,29 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () => _showQualityPicker(context, ref),
                   borderRadius: BorderRadius.circular(AppSizes.cardBorderRadius),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.w),
                     child: Row(
                       children: [
-                        const Icon(Icons.high_quality_rounded,
-                            color: AppColors.primary, size: 24),
-                        const SizedBox(width: 14),
-                        const Expanded(
+                        Icon(Icons.high_quality_rounded,
+                            color: AppColors.primary, size: 24.sp),
+                        SizedBox(width: 14.w),
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 '默认音质',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              SizedBox(height: 2),
+                              SizedBox(height: 2.w),
                               Text(
                                 '播放与下载时优先请求的音质',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   color: AppColors.textTertiary,
                                 ),
                               ),
@@ -142,13 +143,13 @@ class SettingsScreen extends ConsumerWidget {
                         Text(
                           _qualityLabel(
                               ref.watch(settingsProvider).defaultQuality),
-                          style: const TextStyle(
-                            fontSize: 14,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             color: AppColors.textSecondary,
                           ),
                         ),
-                        const Icon(Icons.chevron_right_rounded,
-                            color: AppColors.textTertiary, size: 20),
+                        Icon(Icons.chevron_right_rounded,
+                            color: AppColors.textTertiary, size: 20.sp),
                       ],
                     ),
                   ),
@@ -170,7 +171,7 @@ class SettingsScreen extends ConsumerWidget {
       ),
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+          padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
           child: GlassPanel(
             blur: 12,
             borderRadius: AppSizes.cardBorderRadius,
@@ -190,7 +191,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
       ),
-      const SliverToBoxAdapter(child: SizedBox(height: 120)),
+      SliverToBoxAdapter(child: SizedBox(height: 120.w)),
       ],
       ),
     );
@@ -199,16 +200,16 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSizes.paddingH,
-        24,
+        24.w,
         AppSizes.paddingH,
-        12,
+        12.w,
       ),
       child: Text(
         title,
-        style: const TextStyle(
-          fontSize: 16,
+        style: TextStyle(
+          fontSize: 16.sp,
           fontWeight: FontWeight.w600,
           color: AppColors.textSecondary,
         ),
@@ -245,12 +246,12 @@ class SettingsScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: EdgeInsets.all(16.w),
                 child: Text(
                   '默认音质',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
                   ),
@@ -265,15 +266,15 @@ class SettingsScreen extends ConsumerWidget {
                   title: Text(
                     quality.label,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 15.sp,
                       color: quality.value == current
                           ? AppColors.primary
                           : AppColors.textPrimary,
                     ),
                   ),
                   trailing: quality.value == current
-                      ? const Icon(Icons.check_rounded,
-                          color: AppColors.primary, size: 20)
+                      ? Icon(Icons.check_rounded,
+                          color: AppColors.primary, size: 20.sp)
                       : null,
                   onTap: () {
                     Navigator.pop(context);
@@ -282,7 +283,7 @@ class SettingsScreen extends ConsumerWidget {
                         .setDefaultQuality(quality.value);
                   },
                 ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
             ],
           ),
         ),
@@ -300,19 +301,19 @@ class SettingsScreen extends ConsumerWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSizes.cardBorderRadius),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 14.w),
         child: Row(
           children: [
-            Icon(icon, color: AppColors.primary, size: 24),
-            const SizedBox(width: 14),
+            Icon(icon, color: AppColors.primary, size: 24.sp),
+            SizedBox(width: 14.w),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                       color: AppColors.textPrimary,
                     ),
@@ -320,7 +321,7 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 13.sp,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -328,7 +329,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             if (onTap != null)
-              Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary, size: 22),
+              Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary, size: 22.sp),
           ],
         ),
       ),

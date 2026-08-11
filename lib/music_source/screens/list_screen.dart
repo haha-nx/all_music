@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../config/constants.dart';
@@ -40,11 +41,11 @@ class _ListScreenState extends ConsumerState<ListScreen> {
               children: [
                 // 顶栏
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    12,
-                    8,
+                  padding: EdgeInsets.fromLTRB(
+                    12.w,
+                    8.w,
                     AppSizes.paddingH,
-                    8,
+                    8.w,
                   ),
                   child: Row(
                     children: [
@@ -53,19 +54,19 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                         borderRadius: 24,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.arrow_back_ios_new_rounded,
                             color: AppColors.textPrimary,
-                            size: 18,
+                            size: 18.sp,
                           ),
                           onPressed: () => Navigator.pop(context),
                         ),
                       ),
                       const Spacer(),
-                      const Text(
+                      Text(
                         '排行榜',
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 17.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
@@ -76,10 +77,10 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                         borderRadius: 24,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.refresh_rounded,
                             color: AppColors.textPrimary,
-                            size: 18,
+                            size: 18.sp,
                           ),
                           onPressed: () =>
                               ref.read(listsProvider.notifier).refresh(),
@@ -127,7 +128,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                           ref.read(listsProvider.notifier).refresh(),
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.only(bottom: 120),
+                        padding: EdgeInsets.only(bottom: 120.w),
                         children: [
                           for (final section in state.sections) ...[
                             _buildSectionHeader(
@@ -156,27 +157,27 @@ class _ListScreenState extends ConsumerState<ListScreen> {
 
   Widget _buildSectionHeader(String name) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSizes.paddingH,
-        14,
+        14.w,
         AppSizes.paddingH,
-        10,
+        10.w,
       ),
       child: Row(
         children: [
           Container(
-            width: 4,
-            height: 18,
+            width: 4.w,
+            height: 18.w,
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Text(
             name,
-            style: const TextStyle(
-              fontSize: 20,
+            style: TextStyle(
+              fontSize: 20.sp,
               fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
@@ -191,11 +192,11 @@ class _ListScreenState extends ConsumerState<ListScreen> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 16,
+        mainAxisSpacing: 10.w,
+        crossAxisSpacing: 16.w,
         childAspectRatio: 0.8,
       ),
       itemCount: lists.length,
@@ -244,15 +245,15 @@ class _ListCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.w),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
             child: Text(
               info.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -275,11 +276,11 @@ class _ListCard extends StatelessWidget {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.leaderboard_rounded,
           color: AppColors.textSecondary,
-          size: 36,
+          size: 36.sp,
         ),
       ),
     );
@@ -298,14 +299,14 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
+          Icon(
             Icons.cloud_off_rounded,
-            size: 56,
+            size: 56.sp,
             color: AppColors.textTertiary,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
             child: Text(
               error,
               textAlign: TextAlign.center,
@@ -315,13 +316,13 @@ class _ErrorState extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 20),
+          SizedBox(height: 20.w),
           GlassPanel(
             blur: 10,
             borderRadius: 20,
             tintColor: AppColors.primary.withValues(alpha: 0.2),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 10.w),
               child: GestureDetector(
                 onTap: onRetry,
                 child: const Text(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/player_provider.dart';
@@ -27,7 +28,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
           children: [
             // 顶栏
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, AppSizes.paddingH, 8),
+              padding: EdgeInsets.fromLTRB(12.w, 8.w, AppSizes.paddingH, 8.w),
               child: Row(
                 children: [
                   GlassPanel(
@@ -35,34 +36,34 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                     borderRadius: 24,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 18),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 18.sp),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '播放队列 (${queue.length})',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                   ),
                   const Spacer(),
-                  const SizedBox(width: 48),
+                  SizedBox(width: 48.w),
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             // 当前播放高亮区
             if (playerState.currentSong != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+                padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
                 child: GlassPanel(
                   blur: 14,
                   borderRadius: 16,
                   tintColor: AppColors.primary.withValues(alpha: 0.15),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.w),
                     leading: AlbumArt(
                       coverUrl: playerState.currentSong!.albumCover,
-                      size: 44,
+                      size: 44.w,
                       borderRadius: 12,
                       isPlaying: playerState.isPlaying,
                     ),
@@ -70,13 +71,13 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                       playerState.currentSong!.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.primary),
+                      style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w600, color: AppColors.primary),
                     ),
                     subtitle: Text(
                       playerState.currentSong!.artist,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                     ),
                     trailing: Icon(
                       playerState.isPlaying ? Icons.equalizer_rounded : Icons.play_circle_outline_rounded,
@@ -86,17 +87,17 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 16, AppSizes.paddingH, 8),
+              padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 16.w, AppSizes.paddingH, 8.w),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     '接下来',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   const Spacer(),
                   Text(
                     '${queue.length - playerState.currentIndex - 1} 首',
-                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -108,9 +109,9 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.queue_music_rounded, size: 64, color: AppColors.textTertiary.withValues(alpha: 0.3)),
-                          const SizedBox(height: 16),
-                          const Text('队列为空', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
+                          Icon(Icons.queue_music_rounded, size: 64.sp, color: AppColors.textTertiary.withValues(alpha: 0.3)),
+                          SizedBox(height: 16.w),
+                          Text('队列为空', style: TextStyle(color: AppColors.textSecondary, fontSize: 16.sp)),
                         ],
                       ),
                     )
@@ -119,7 +120,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                         canvasColor: Colors.transparent,
                       ),
                       child: ReorderableListView.builder(
-                        padding: const EdgeInsets.only(bottom: 20),
+                        padding: EdgeInsets.only(bottom: 20.w),
                         itemCount: queue.length,
                         onReorderItem: (oldIndex, newIndex) {
                           HapticFeedback.lightImpact();
@@ -147,19 +148,19 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                             direction: DismissDirection.endToStart,
                             background: Container(
                               alignment: Alignment.centerRight,
-                              padding: const EdgeInsets.only(right: 24),
-                              margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
+                              padding: EdgeInsets.only(right: 24.w),
+                              margin: EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3.w),
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(16),
                                 color: Colors.red.withValues(alpha: 0.8),
                               ),
-                              child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
+                              child: Icon(Icons.delete_rounded, color: Colors.white, size: 24.sp),
                             ),
                             onDismissed: (_) {
                               ref.read(playerProvider.notifier).removeFromQueue(index);
                             },
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
+                              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3.w),
                               child: GlassPanel(
                                 blur: 8,
                                 borderRadius: 16,
@@ -169,15 +170,15 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                 child: Material(
                                   color: Colors.transparent,
                                   child: ListTile(
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                                  contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.w),
                                   leading: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.drag_handle_rounded, color: AppColors.textTertiary, size: 20),
-                                      const SizedBox(width: 8),
+                                      Icon(Icons.drag_handle_rounded, color: AppColors.textTertiary, size: 20.sp),
+                                      SizedBox(width: 8.w),
                                       AlbumArt(
                                         coverUrl: song.albumCover,
-                                        size: 44,
+                                        size: 44.w,
                                         borderRadius: 12,
                                         isPlaying: isCurrent,
                                       ),
@@ -188,7 +189,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      fontSize: 15,
+                                      fontSize: 15.sp,
                                       fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w500,
                                       color: isCurrent ? AppColors.primary : AppColors.textPrimary,
                                     ),
@@ -197,10 +198,10 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                     song.artist,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                                    style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                                   ),
                                   trailing: IconButton(
-                                    icon: const Icon(Icons.close_rounded, color: AppColors.textTertiary, size: 20),
+                                    icon: Icon(Icons.close_rounded, color: AppColors.textTertiary, size: 20.sp),
                                     onPressed: () {
                                       ref.read(playerProvider.notifier).removeFromQueue(index);
                                     },

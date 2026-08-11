@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../config/constants.dart';
@@ -153,19 +154,19 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
         backgroundColor: Colors.transparent,
         title: Text(
           '登录${widget.platformName}',
-          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 17.sp, fontWeight: FontWeight.w600),
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: EdgeInsets.only(right: 12.w),
             child: FilledButton(
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16.w,
+                  vertical: 8.w,
                 ),
               ),
               onPressed: () async {

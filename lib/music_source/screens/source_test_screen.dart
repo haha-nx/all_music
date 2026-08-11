@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../config/constants.dart';
 import '../../widgets/glass_panel.dart';
@@ -161,67 +162,67 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20.sp),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingH),
+        padding: EdgeInsets.all(AppSizes.paddingH),
         children: [
           // 状态
           _statusCard(),
 
-          const SizedBox(height: 16),
+          SizedBox(height: 16.w),
 
           // 搜索框
           _searchBar(),
 
-          const SizedBox(height: 20),
+          SizedBox(height: 20.w),
 
           // 搜索结果
           if (_loading)
-            const Center(
+            Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: EdgeInsets.all(32.w),
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
             )
           else if (_results.isNotEmpty) ...[
-            const Text(
+            Text(
               '搜索结果',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             for (final track in _results) _trackCard(track),
           ],
 
           // 歌词预览
           if (_lyricPreview != null) ...[
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20.w),
+            Text(
               '歌词预览',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             GlassPanel(
               blur: 10,
               borderRadius: 14,
               tintColor: AppColors.surfaceLight,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14.w),
                 child: Text(
                   _lyricPreview!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 13,
+                    fontSize: 13.sp,
                     height: 1.6,
                   ),
                 ),
@@ -231,27 +232,27 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
 
           // 播放URL
           if (_playUrl != null) ...[
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20.w),
+            Text(
               '播放URL',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             GlassPanel(
               blur: 10,
               borderRadius: 14,
               tintColor: AppColors.surfaceLight,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14.w),
                 child: Text(
                   _playUrl!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.success,
-                    fontSize: 12,
+                    fontSize: 12.sp,
                   ),
                   maxLines: 5,
                   overflow: TextOverflow.ellipsis,
@@ -260,7 +261,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
             ),
           ],
 
-          const SizedBox(height: 80),
+          SizedBox(height: 80.w),
         ],
       ),
     );
@@ -274,7 +275,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
           ? AppColors.success.withValues(alpha: 0.1)
           : AppColors.error.withValues(alpha: 0.1),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.w),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -287,25 +288,25 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
                   color: _bridge?.ready == true
                       ? AppColors.success
                       : AppColors.error,
-                  size: 20,
+                  size: 20.sp,
                 ),
-                const SizedBox(width: 8),
-                const Text(
+                SizedBox(width: 8.w),
+                Text(
                   '引擎状态',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 16,
+                    fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8.w),
             Text(
               _status,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 13,
+                fontSize: 13.sp,
                 height: 1.5,
               ),
             ),
@@ -325,21 +326,21 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
             tintColor: AppColors.surfaceLight,
             child: TextField(
               controller: _keywordController,
-              style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 14.sp),
               decoration: InputDecoration(
                 hintText: '输入搜索关键词',
                 hintStyle: TextStyle(color: AppColors.textTertiary),
                 border: InputBorder.none,
                 contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.w),
               ),
               onSubmitted: (_) => _testSearch(),
             ),
           ),
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: 10.w),
         SizedBox(
-          height: 44,
+          height: 44.w,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
@@ -355,21 +356,21 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
 
   Widget _trackCard(MusicTrack track) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: EdgeInsets.only(bottom: 6.w),
       child: GlassPanel(
         blur: 8,
         borderRadius: 14,
         tintColor: AppColors.surfaceLight,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12.w),
           child: Row(
             children: [
               // 封面
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  width: 44,
-                  height: 44,
+                  width: 44.w,
+                  height: 44.w,
                   color: AppColors.textTertiary.withValues(alpha: 0.2),
                   child: track.coverUrl != null && track.coverUrl!.isNotEmpty
                       ? Image.network(
@@ -377,13 +378,13 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
                           fit: BoxFit.cover,
                           errorBuilder: (_, __, _) =>
                               Icon(Icons.music_note,
-                                  color: AppColors.textTertiary, size: 22),
+                                  color: AppColors.textTertiary, size: 22.sp),
                         )
                       : Icon(Icons.music_note,
-                          color: AppColors.textTertiary, size: 22),
+                          color: AppColors.textTertiary, size: 22.sp),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               // 信息
               Expanded(
                 child: Column(
@@ -391,9 +392,9 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
                   children: [
                     Text(
                       track.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
@@ -401,18 +402,18 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
                     ),
                     Text(
                       '${track.artist} · ${track.album ?? ""} · ${track.sourceKey}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 12,
+                        fontSize: 12.sp,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       track.durationFormatted,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textTertiary,
-                        fontSize: 11,
+                        fontSize: 11.sp,
                       ),
                     ),
                   ],
@@ -421,7 +422,7 @@ class _SourceTestScreenState extends ConsumerState<SourceTestScreen> {
               // 操作按钮
               PopupMenuButton<String>(
                 icon: Icon(Icons.more_vert,
-                    color: AppColors.textTertiary, size: 18),
+                    color: AppColors.textTertiary, size: 18.sp),
                 color: AppColors.surfaceDark,
                 onSelected: (action) {
                   if (action == 'url') _testGetUrl(track);

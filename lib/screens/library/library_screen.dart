@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../models/playlist.dart';
@@ -57,14 +58,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             duration: const Duration(milliseconds: 200),
             opacity: (_scrollOffset < 60) ? 1.0 : 0.0,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 60, AppSizes.paddingH, 4),
+              padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 60.w, AppSizes.paddingH, 4.w),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     '音乐库',
                     style: TextStyle(
-                      fontSize: 34,
+                      fontSize: 34.sp,
                       fontWeight: FontWeight.bold,
                       color: AppColors.textPrimary,
                       letterSpacing: -0.5,
@@ -78,21 +79,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         borderRadius: 14,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
-                          icon: const Icon(Icons.settings_rounded, color: AppColors.textSecondary, size: 20),
+                          icon: Icon(Icons.settings_rounded, color: AppColors.textSecondary, size: 20.sp),
                           onPressed: () => context.push('/settings'),
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(8.w),
                           constraints: const BoxConstraints(),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: 8.w),
                       GlassPanel(
                         blur: 8,
                         borderRadius: 14,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
-                          icon: const Icon(Icons.add_rounded, color: AppColors.primary, size: 20),
+                          icon: Icon(Icons.add_rounded, color: AppColors.primary, size: 20.sp),
                           onPressed: _showCreatePlaylistDialog,
-                          padding: const EdgeInsets.all(8),
+                          padding: EdgeInsets.all(8.w),
                           constraints: const BoxConstraints(),
                         ),
                       ),
@@ -107,10 +108,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         // 问候语
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 0, AppSizes.paddingH, 24),
+            padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 0, AppSizes.paddingH, 24.w),
             child: Text(
               _getGreeting(),
-              style: TextStyle(fontSize: 15, color: AppColors.textSecondary, height: 1.4),
+              style: TextStyle(fontSize: 15.sp, color: AppColors.textSecondary, height: 1.4),
             ),
           ),
         ),
@@ -147,7 +148,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         if (recentPlayed.isEmpty && favorites.isEmpty && playlists.isEmpty && accountPlaylists.isEmpty)
           _buildEmptyState(),
 
-        const SliverToBoxAdapter(child: SizedBox(height: 140)),
+        SliverToBoxAdapter(child: SizedBox(height: 140.w)),
       ],
     );
   }
@@ -159,32 +160,32 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.headphones_rounded, size: 72, color: AppColors.textTertiary.withValues(alpha: 0.35)),
-            const SizedBox(height: 20),
-            const Text(
+            Icon(Icons.headphones_rounded, size: 72.sp, color: AppColors.textTertiary.withValues(alpha: 0.35)),
+            SizedBox(height: 20.w),
+            Text(
               '欢迎使用 All Music',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10.w),
+            Text(
               '导入音源后即可搜索和播放音乐',
-              style: TextStyle(fontSize: 15, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 15.sp, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 28),
+            SizedBox(height: 28.w),
             GlassPanel(
               blur: 12,
               borderRadius: 20,
               tintColor: AppColors.primary.withValues(alpha: 0.25),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                padding: EdgeInsets.symmetric(horizontal: 28.w, vertical: 14.w),
                 child: GestureDetector(
                   onTap: () => context.push('/settings'),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_link_rounded, color: AppColors.primary, size: 20),
-                      SizedBox(width: 8),
-                      Text('导入音源', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w600)),
+                      Icon(Icons.add_link_rounded, color: AppColors.primary, size: 20.sp),
+                      SizedBox(width: 8.w),
+                      Text('导入音源', style: TextStyle(color: AppColors.primary, fontSize: 16.sp, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -199,7 +200,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   // ──── 收藏 Hero 卡片 ────
   Widget _buildFavoritesHero(List<Song> favorites) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 0, AppSizes.paddingH, 12),
+      padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 0, AppSizes.paddingH, 12.w),
       child: GestureDetector(
         onTap: () => context.push('/favorites'),
         child: Hero(
@@ -211,15 +212,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               borderRadius: 24,
               tintColor: AppColors.primary.withValues(alpha: 0.12),
               child: Container(
-                height: 150,
-                padding: const EdgeInsets.all(20),
+                height: 150.w,
+                padding: EdgeInsets.all(20.w),
                 child: Stack(
                   children: [
                     Positioned(
-                      right: -10,
-                      top: -10,
-                      bottom: -10,
-                      width: 160,
+                      right: -10.w,
+                      top: -10.w,
+                      bottom: -10.w,
+                      width: 160.w,
                       child: _buildFavoritesCollage(favorites),
                     ),
                     Column(
@@ -227,27 +228,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.w),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '精选',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                            style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.bold, color: AppColors.primary),
                           ),
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '我的收藏',
-                              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.5),
+                              style: TextStyle(fontSize: 26.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.5),
                             ),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4.w),
                             Text(
                               '${favorites.length} 首精选歌曲',
-                              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                              style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                             ),
                           ],
                         ),
@@ -267,8 +268,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final displayed = songs.take(4).toList();
     return Stack(
       children: List.generate(displayed.length, (i) {
-        final size = 100.0 - i * 12;
-        final offset = 8.0 + i * 16;
+        final size = 100.0.w - i * 12.w;
+        final offset = 8.0.w + i * 16.w;
         return Positioned(
           right: offset,
           bottom: offset,
@@ -299,11 +300,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final currentSong = ref.watch(playerProvider.select((s) => s.currentSong));
 
     return SizedBox(
-      height: 190,
+      height: 190.w,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 8),
+        padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 8.w),
         itemCount: songs.length,
         itemBuilder: (context, index) {
           final song = songs[index];
@@ -313,8 +314,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             behavior: HitTestBehavior.opaque, // 整卡任意位置可点
             onTap: () => ref.read(playerProvider.notifier).playPlaylist(fullQueue.toList(), startIndex: index),
             child: Container(
-              width: 140,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: 140.w,
+              margin: EdgeInsets.symmetric(horizontal: 8.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -324,38 +325,38 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                         blur: 10,
                         borderRadius: 14,
                         tintColor: AppColors.surfaceLight,
-                        child: AlbumArt(coverUrl: song.albumCover, size: 140, isPlaying: isPlaying, borderRadius: 14),
+                        child: AlbumArt(coverUrl: song.albumCover, size: 140.w, isPlaying: isPlaying, borderRadius: 14),
                       ),
                       if (isPlaying)
                         Positioned(
-                          right: 8,
-                          bottom: 8,
+                          right: 8.w,
+                          bottom: 8.w,
                           child: Container(
-                            width: 32,
-                            height: 32,
+                            width: 32.w,
+                            height: 32.w,
                             decoration: BoxDecoration(
                               color: AppColors.primary,
                               shape: BoxShape.circle,
                               boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.5), blurRadius: 12)],
                             ),
-                            child: const Icon(Icons.equalizer_rounded, color: Colors.white, size: 18),
+                            child: Icon(Icons.equalizer_rounded, color: Colors.white, size: 18.sp),
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8.w),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
                     child: Text(
                       song.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isPlaying ? AppColors.primary : AppColors.textPrimary),
+                      style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600, color: isPlaying ? AppColors.primary : AppColors.textPrimary),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    padding: EdgeInsets.symmetric(horizontal: 4.w),
+                    child: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary)),
                   ),
                 ],
               ),
@@ -377,22 +378,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget _buildPlaylistGroupHeader(String name) {
     return Padding(
       padding:
-          const EdgeInsets.fromLTRB(AppSizes.paddingH, 10, AppSizes.paddingH, 2),
+          EdgeInsets.fromLTRB(AppSizes.paddingH, 10.w, AppSizes.paddingH, 2.w),
       child: Row(
         children: [
           Container(
-            width: 3,
-            height: 14,
+            width: 3.w,
+            height: 14.w,
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8.w),
           Text(
             name,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
@@ -409,12 +410,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     String? platformName,
   }) {
     final width =
-        (MediaQuery.of(context).size.width - AppSizes.paddingH * 2 - 12) / 2;
+        (MediaQuery.of(context).size.width - AppSizes.paddingH * 2 - 12.w) / 2;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
       child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
+        spacing: 12.w,
+        runSpacing: 12.w,
         children: [
           // 平台「我喜欢的音乐」卡片
           for (final info in accountPlaylists)
@@ -439,13 +440,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           borderRadius: 20,
           tintColor: AppColors.surfaceLight,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: double.infinity,
-                  height: 120,
+                  height: 120.w,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     gradient: LinearGradient(
@@ -466,54 +467,54 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           child: Image.network(
                             info.picUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => const Center(
+                            errorBuilder: (_, __, ___) => Center(
                               child: Icon(Icons.favorite_rounded,
-                                  color: AppColors.textSecondary, size: 40),
+                                  color: AppColors.textSecondary, size: 40.sp),
                             ),
                           ),
                         )
                       else
-                        const Center(
+                        Center(
                           child: Icon(Icons.favorite_rounded,
-                              color: AppColors.textSecondary, size: 40),
+                              color: AppColors.textSecondary, size: 40.sp),
                         ),
                       // 平台标注徽标
                       if (platformName != null)
                         Positioned(
-                          left: 8,
-                          top: 8,
+                          left: 8.w,
+                          top: 8.w,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6.w, vertical: 2.w),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.55),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               platformName,
-                              style: const TextStyle(
-                                  fontSize: 10, color: Colors.white),
+                              style: TextStyle(
+                                  fontSize: 10.sp, color: Colors.white),
                             ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 Text(
                   info.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 15,
+                  style: TextStyle(
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.w),
                 Text(
                   info.countText,
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                      fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -538,13 +539,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           borderRadius: 20,
           tintColor: AppColors.surfaceLight,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: EdgeInsets.all(14.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: double.infinity,
-                  height: 120,
+                  height: 120.w,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     gradient: LinearGradient(
@@ -556,25 +557,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       ],
                     ),
                   ),
-                  child: const Center(
+                  child: Center(
                       child: Icon(Icons.queue_music_rounded,
-                          color: AppColors.textSecondary, size: 40)),
+                          color: AppColors.textSecondary, size: 40.sp)),
                 ),
-                const SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 Text(
                   pl.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                      fontSize: 15,
+                  style: TextStyle(
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2.w),
                 Text(
                   '${pl.songCount} 首歌曲',
-                  style: const TextStyle(
-                      fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                      fontSize: 12.sp, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -587,22 +588,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   // ──── 通用组件 ────
   Widget _buildSectionHeader(String title, {int? count}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 28, AppSizes.paddingH, 12),
+      padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 28.w, AppSizes.paddingH, 12.w),
       child: Row(
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.3),
+            style: TextStyle(fontSize: 22.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.3),
           ),
           if (count != null) ...[
-            const SizedBox(width: 8),
+            SizedBox(width: 8.w),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.w),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 color: AppColors.surfaceLight,
               ),
-              child: Text('$count', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              child: Text('$count', style: TextStyle(fontSize: 12.sp, color: AppColors.textSecondary)),
             ),
           ],
         ],
@@ -632,44 +633,44 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 36, height: 4, margin: const EdgeInsets.only(top: 8, bottom: 16), decoration: BoxDecoration(color: AppColors.textTertiary, borderRadius: BorderRadius.circular(2))),
+              Container(width: 36.w, height: 4.w, margin: EdgeInsets.only(top: 8.w, bottom: 16.w), decoration: BoxDecoration(color: AppColors.textTertiary, borderRadius: BorderRadius.circular(2))),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: 20.w),
                 child: Row(
                   children: [
-                    Container(width: 40, height: 40, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: AppColors.primary.withValues(alpha: 0.15)), child: const Icon(Icons.queue_music_rounded, color: AppColors.primary, size: 20)),
-                    const SizedBox(width: 12),
+                    Container(width: 40.w, height: 40.w, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: AppColors.primary.withValues(alpha: 0.15)), child: Icon(Icons.queue_music_rounded, color: AppColors.primary, size: 20.sp)),
+                    SizedBox(width: 12.w),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(playlist.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                          Text('${playlist.songCount} 首', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text(playlist.name, style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                          Text('${playlist.songCount} 首', style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.w),
               Divider(color: AppColors.textTertiary.withValues(alpha: 0.2), height: 1),
               ListTile(
-                leading: const Icon(Icons.edit_rounded, color: AppColors.textPrimary, size: 22),
-                title: const Text('重命名', style: TextStyle(color: AppColors.textPrimary, fontSize: 15)),
+                leading: Icon(Icons.edit_rounded, color: AppColors.textPrimary, size: 22.sp),
+                title: Text('重命名', style: TextStyle(color: AppColors.textPrimary, fontSize: 15.sp)),
                 onTap: () { Navigator.pop(context); _showRenameDialog(playlist); },
               ),
               if (playlist.songs.isNotEmpty)
                 ListTile(
-                  leading: const Icon(Icons.play_arrow_rounded, color: AppColors.textPrimary, size: 22),
-                  title: const Text('播放全部', style: TextStyle(color: AppColors.textPrimary, fontSize: 15)),
+                  leading: Icon(Icons.play_arrow_rounded, color: AppColors.textPrimary, size: 22.sp),
+                  title: Text('播放全部', style: TextStyle(color: AppColors.textPrimary, fontSize: 15.sp)),
                   onTap: () { Navigator.pop(context); ref.read(playerProvider.notifier).playPlaylist(playlist.songs); },
                 ),
               ListTile(
-                leading: const Icon(Icons.delete_rounded, color: Colors.red, size: 22),
-                title: const Text('删除歌单', style: TextStyle(color: Colors.red, fontSize: 15)),
+                leading: Icon(Icons.delete_rounded, color: Colors.red, size: 22.sp),
+                title: Text('删除歌单', style: TextStyle(color: Colors.red, fontSize: 15.sp)),
                 onTap: () { Navigator.pop(context); _confirmDeletePlaylist(playlist); },
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
             ],
           ),
         ),
@@ -686,30 +687,30 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: GlassPanel(
           blur: 20, borderRadius: 24, tintColor: AppColors.surfaceDark,
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.w),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('重命名歌单', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 20),
+                Text('重命名歌单', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                SizedBox(height: 20.w),
                 GlassPanel(
                   blur: 8, borderRadius: 12, tintColor: AppColors.surfaceLight,
                   child: TextField(
                     controller: controller,
                     style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: '输入新名称', hintStyle: TextStyle(color: AppColors.textTertiary),
-                      border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.w),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   GlassPanel(blur: 10, borderRadius: 12, tintColor: AppColors.primary.withValues(alpha: 0.3),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.w),
                       child: GestureDetector(
                         onTap: () { if (controller.text.trim().isNotEmpty) { ref.read(playlistProvider.notifier).renamePlaylist(playlist.id, controller.text.trim()); Navigator.pop(context); } },
                         child: const Text('确认', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
@@ -733,20 +734,20 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: GlassPanel(
           blur: 20, borderRadius: 24, tintColor: AppColors.surfaceDark,
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.w),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('删除歌单', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 12),
-                Text('确定要删除「${playlist.name}」吗？此操作不可恢复。', textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: AppColors.textSecondary)),
-                const SizedBox(height: 24),
+                Text('删除歌单', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                SizedBox(height: 12.w),
+                Text('确定要删除「${playlist.name}」吗？此操作不可恢复。', textAlign: TextAlign.center, style: TextStyle(fontSize: 15.sp, color: AppColors.textSecondary)),
+                SizedBox(height: 24.w),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   GlassPanel(blur: 10, borderRadius: 12, tintColor: Colors.red.withValues(alpha: 0.3),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.w),
                       child: GestureDetector(
                         onTap: () { ref.read(playlistProvider.notifier).deletePlaylist(playlist.id); Navigator.pop(context); },
                         child: const Text('删除', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
@@ -771,27 +772,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         child: GlassPanel(
           blur: 20, borderRadius: 24, tintColor: AppColors.surfaceDark,
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24.w),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('创建歌单', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 20),
+                Text('创建歌单', style: TextStyle(fontSize: 20.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                SizedBox(height: 20.w),
                 GlassPanel(
                   blur: 8, borderRadius: 12, tintColor: AppColors.surfaceLight,
                   child: TextField(
                     controller: controller,
                     style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(hintText: '输入歌单名称', hintStyle: TextStyle(color: AppColors.textTertiary), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12)),
+                    decoration: InputDecoration(hintText: '输入歌单名称', hintStyle: TextStyle(color: AppColors.textTertiary), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.w)),
                   ),
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24.w),
                 Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消', style: TextStyle(color: AppColors.textSecondary))),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   GlassPanel(blur: 10, borderRadius: 12, tintColor: AppColors.primary.withValues(alpha: 0.3),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.w),
                       child: GestureDetector(
                         onTap: () { if (controller.text.trim().isNotEmpty) { ref.read(playlistProvider.notifier).createPlaylist(controller.text.trim()); Navigator.pop(context); } },
                         child: const Text('创建', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),

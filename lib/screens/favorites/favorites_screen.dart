@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/player_provider.dart';
@@ -26,7 +27,7 @@ class FavoritesScreen extends ConsumerWidget {
           // 返回按钮 + 大标题
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 52, 0, 0),
+              padding: EdgeInsets.fromLTRB(12.w, 52.w, 0, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: GlassPanel(
@@ -34,10 +35,10 @@ class FavoritesScreen extends ConsumerWidget {
                   borderRadius: 24,
                   tintColor: AppColors.surfaceLight,
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: AppColors.textPrimary,
-                      size: 18,
+                      size: 18.sp,
                     ),
                     onPressed: () => context.pop(),
                   ),
@@ -47,12 +48,12 @@ class FavoritesScreen extends ConsumerWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 12, AppSizes.paddingH, 8),
+              padding: EdgeInsets.fromLTRB(AppSizes.paddingH, 12.w, AppSizes.paddingH, 8.w),
               child: Row(
                 children: [
                   Container(
-                    width: 52,
-                    height: 52,
+                    width: 52.w,
+                    height: 52.w,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(14),
                       gradient: LinearGradient(
@@ -64,20 +65,20 @@ class FavoritesScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 26),
+                    child: Icon(Icons.favorite_rounded, color: Colors.white, size: 26.sp),
                   ),
-                  const SizedBox(width: 14),
+                  SizedBox(width: 14.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           '我的收藏',
-                          style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          style: TextStyle(fontSize: 34.sp, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                         ),
                         Text(
                           '${favorites.length} 首歌曲',
-                          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 14.sp, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -91,34 +92,34 @@ class FavoritesScreen extends ConsumerWidget {
           if (favorites.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8),
+                padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8.w),
                 child: Row(
                   children: [
                     Material(
                       color: AppColors.primary.withValues(alpha: 0.3),
                       shape: const StadiumBorder(),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.w),
                         child: GestureDetector(
                           onTap: () => ref.read(playerProvider.notifier).playPlaylist(favorites),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.play_arrow_rounded, color: Colors.white),
-                              SizedBox(width: 4),
+                              SizedBox(width: 4.w),
                               Text('播放全部', style: TextStyle(color: Colors.white)),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12.w),
                     GlassPanel(
                       blur: 10,
                       borderRadius: 20,
                       tintColor: AppColors.surfaceLight,
-                      child: const Padding(
-                        padding: EdgeInsets.all(10),
+                      child: Padding(
+                        padding: EdgeInsets.all(10.w),
                         child: Icon(Icons.shuffle_rounded, color: AppColors.textSecondary),
                       ),
                     ),
@@ -129,16 +130,16 @@ class FavoritesScreen extends ConsumerWidget {
 
           // 歌曲列表
           if (favorites.isEmpty)
-            const SliverFillRemaining(
+            SliverFillRemaining(
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.favorite_border_rounded, size: 80, color: AppColors.textTertiary),
-                    SizedBox(height: 16),
-                    Text('还没有收藏歌曲', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
-                    SizedBox(height: 8),
-                    Text('在搜索中找到喜欢的歌曲并收藏', style: TextStyle(color: AppColors.textTertiary, fontSize: 14)),
+                    Icon(Icons.favorite_border_rounded, size: 80.sp, color: AppColors.textTertiary),
+                    SizedBox(height: 16.w),
+                    Text('还没有收藏歌曲', style: TextStyle(color: AppColors.textSecondary, fontSize: 16.sp)),
+                    SizedBox(height: 8.w),
+                    Text('在搜索中找到喜欢的歌曲并收藏', style: TextStyle(color: AppColors.textTertiary, fontSize: 14.sp)),
                   ],
                 ),
               ),
@@ -151,7 +152,7 @@ class FavoritesScreen extends ConsumerWidget {
                   final isPlaying = playerState.currentSong?.dedupeKey == song.dedupeKey;
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
+                    padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3.w),
                     child: GlassPanel(
                       blur: 8,
                       borderRadius: 20,
@@ -161,24 +162,24 @@ class FavoritesScreen extends ConsumerWidget {
                       child: Material(
                         color: Colors.transparent,
                         child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.w),
                         leading: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             SizedBox(
-                              width: 32,
+                              width: 32.w,
                               child: Text(
                                 '${index + 1}',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 14.sp,
                                   color: isPlaying ? AppColors.primary : AppColors.textTertiary,
                                 ),
                               ),
                             ),
                             AlbumArt(
                               coverUrl: song.albumCover,
-                              size: 44,
+                              size: 44.w,
                               borderRadius: 12,
                               isPlaying: isPlaying,
                             ),
@@ -189,7 +190,7 @@ class FavoritesScreen extends ConsumerWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: 15.sp,
                             fontWeight: FontWeight.w500,
                             color: isPlaying ? AppColors.primary : AppColors.textPrimary,
                           ),
@@ -198,7 +199,7 @@ class FavoritesScreen extends ConsumerWidget {
                           song.artist,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                          style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
                         ),
                         trailing: Icon(
                           isPlaying ? Icons.equalizer_rounded : Icons.play_circle_outline_rounded,
@@ -220,7 +221,7 @@ class FavoritesScreen extends ConsumerWidget {
               ),
             ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          SliverToBoxAdapter(child: SizedBox(height: 120.w)),
         ],
       ),
     );

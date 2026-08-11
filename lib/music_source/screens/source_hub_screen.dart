@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../config/constants.dart';
 import '../../widgets/glass_panel.dart';
@@ -28,17 +29,17 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new, size: 20.sp),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppSizes.paddingH),
+        padding: EdgeInsets.all(AppSizes.paddingH),
         children: [
           // ── 头部说明 ──
           _SectionHeader(title: '已导入音源', subtitle: '启用音源后可在搜索中使用。可随时移除。'),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12.w),
 
           // ── 音源列表 ──
           if (sources.isEmpty)
@@ -55,7 +56,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
               ),
             ),
 
-          const SizedBox(height: 32),
+          SizedBox(height: 32.w),
 
           // ── 导入区域 ──
           _SectionHeader(
@@ -63,7 +64,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
             subtitle: '支持粘贴 LX Music 格式的源脚本或输入 .js 文件URL',
           ),
 
-          const SizedBox(height: 12),
+          SizedBox(height: 12.w),
 
           // 导入按钮
           Row(
@@ -75,7 +76,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   onTap: _showImportFromUrl,
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: _ImportButton(
                   icon: Icons.code,
@@ -86,7 +87,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
             ],
           ),
 
-          const SizedBox(height: 80),
+          SizedBox(height: 80.w),
         ],
       ),
     );
@@ -104,10 +105,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            left: 20.w,
+            right: 20.w,
+            top: 20.w,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20.w,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -115,35 +116,35 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 40.w,
+                  height: 4.w,
                   decoration: BoxDecoration(
                     color: AppColors.textTertiary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20.w),
+              Text(
                 '粘贴源脚本',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 20,
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
               Text(
                 '粘贴 LX Music 格式的 .js 源脚本内容',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
               TextField(
                 controller: controller,
                 maxLines: 5,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: 13.sp,
                   fontFamily: 'monospace',
                 ),
                 decoration: InputDecoration(
@@ -157,10 +158,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 48.w,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -183,9 +184,9 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                       _showError(result.error ?? '导入失败');
                     }
                   },
-                  child: const Text(
+                  child: Text(
                     '导入',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: 16.sp),
                   ),
                 ),
               ),
@@ -208,10 +209,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
       builder: (ctx) {
         return Padding(
           padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+            left: 20.w,
+            right: 20.w,
+            top: 20.w,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20.w,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -219,29 +220,29 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 40.w,
+                  height: 4.w,
                   decoration: BoxDecoration(
                     color: AppColors.textTertiary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
-              const Text(
+              SizedBox(height: 20.w),
+              Text(
                 '从URL导入',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 20,
+                  fontSize: 20.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8.w),
               Text(
                 '输入 LX Music 源脚本的 .js 文件URL',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
               TextField(
                 controller: controller,
                 style: const TextStyle(color: AppColors.textPrimary),
@@ -256,10 +257,10 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16.w),
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 48.w,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -282,9 +283,9 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
                       _showError(result.error ?? '导入失败');
                     }
                   },
-                  child: const Text(
+                  child: Text(
                     '下载并导入',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(color: Colors.white, fontSize: 16.sp),
                   ),
                 ),
               ),
@@ -338,12 +339,12 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
           borderRadius: 24,
           tintColor: AppColors.surfaceDark,
           child: Padding(
-            padding: const EdgeInsets.all(32),
+            padding: EdgeInsets.all(32.w),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const CircularProgressIndicator(color: AppColors.primary),
-                const SizedBox(height: 16),
+                SizedBox(height: 16.w),
                 Text(
                   msg,
                   style: const TextStyle(color: AppColors.textSecondary),
@@ -374,7 +375,7 @@ class _SourceHubScreenState extends ConsumerState<SourceHubScreen> {
         title: const Text('导入失败', style: TextStyle(color: AppColors.error)),
         content: Text(
           msg,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13.sp),
         ),
         actions: [
           TextButton(
@@ -402,16 +403,16 @@ class _SectionHeader extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 20,
+            fontSize: 20.sp,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4.w),
         Text(
           subtitle,
-          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          style: TextStyle(color: AppColors.textSecondary, fontSize: 13.sp),
         ),
       ],
     );
@@ -434,7 +435,7 @@ class _SourceCard extends StatelessWidget {
     final enabled = source.enabled;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: 8.w),
       child: GlassPanel(
         blur: 10,
         borderRadius: 14,
@@ -442,7 +443,7 @@ class _SourceCard extends StatelessWidget {
             ? AppColors.surfaceLight
             : AppColors.surfaceLight.withValues(alpha: 0.3),
         child: Padding(
-          padding: const EdgeInsets.all(14),
+          padding: EdgeInsets.all(14.w),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -450,8 +451,8 @@ class _SourceCard extends StatelessWidget {
                 children: [
                   // 状态图标
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 44.w,
+                    height: 44.w,
                     decoration: BoxDecoration(
                       color: enabled
                           ? AppColors.primary.withValues(alpha: 0.15)
@@ -463,10 +464,10 @@ class _SourceCard extends StatelessWidget {
                       color: enabled
                           ? AppColors.primary
                           : AppColors.textTertiary,
-                      size: 22,
+                      size: 22.sp,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -480,7 +481,7 @@ class _SourceCard extends StatelessWidget {
                                   color: enabled
                                       ? AppColors.textPrimary
                                       : AppColors.textTertiary,
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w600,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -488,14 +489,14 @@ class _SourceCard extends StatelessWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 2),
+                        SizedBox(height: 2.w),
                         Text(
                           _buildSubtitle(),
                           style: TextStyle(
                             color: enabled
                                 ? AppColors.textSecondary
                                 : AppColors.textTertiary,
-                            fontSize: 12,
+                            fontSize: 12.sp,
                           ),
                         ),
                       ],
@@ -512,10 +513,10 @@ class _SourceCard extends StatelessWidget {
 
               // 能力标签
               if (source.capabilities.isNotEmpty && enabled) ...[
-                const SizedBox(height: 10),
+                SizedBox(height: 10.w),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                  spacing: 6.w,
+                  runSpacing: 6.w,
                   children: [
                     for (final cap in source.capabilities.values)
                       _CapabilityChip(capability: cap),
@@ -525,19 +526,19 @@ class _SourceCard extends StatelessWidget {
 
               // 操作按钮
               if (onRemove != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: 8.w),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
                     onPressed: onRemove,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.delete_outline,
-                      size: 16,
+                      size: 16.sp,
                       color: AppColors.error,
                     ),
-                    label: const Text(
+                    label: Text(
                       '移除',
-                      style: TextStyle(color: AppColors.error, fontSize: 13),
+                      style: TextStyle(color: AppColors.error, fontSize: 13.sp),
                     ),
                   ),
                 ),
@@ -576,14 +577,14 @@ class _CapabilityChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.w),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         '${capability.name} (${capability.actions.join('/')})',
-        style: const TextStyle(color: AppColors.primary, fontSize: 11),
+        style: TextStyle(color: AppColors.primary, fontSize: 11.sp),
       ),
     );
   }
@@ -601,28 +602,28 @@ class _EmptyState extends StatelessWidget {
       borderRadius: 14,
       tintColor: AppColors.surfaceLight,
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32.w),
         child: Column(
           children: [
             Icon(
               Icons.library_music_outlined,
-              size: 48,
+              size: 48.sp,
               color: AppColors.textTertiary,
             ),
-            const SizedBox(height: 12),
-            const Text(
+            SizedBox(height: 12.w),
+            Text(
               '还没有任何音源',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 15),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 15.sp),
             ),
-            const SizedBox(height: 4),
-            const Text(
+            SizedBox(height: 4.w),
+            Text(
               '导入音源后即可搜索和播放音乐',
-              style: TextStyle(color: AppColors.textTertiary, fontSize: 13),
+              style: TextStyle(color: AppColors.textTertiary, fontSize: 13.sp),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16.w),
             ElevatedButton.icon(
               onPressed: onImport,
-              icon: const Icon(Icons.add, size: 18),
+              icon: Icon(Icons.add, size: 18.sp),
               label: const Text('导入音源'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -660,16 +661,16 @@ class _ImportButton extends StatelessWidget {
           borderRadius: 14,
           tintColor: AppColors.surfaceLight,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            padding: EdgeInsets.symmetric(vertical: 20.w),
             child: Column(
               children: [
-                Icon(icon, color: AppColors.primary, size: 28),
-                const SizedBox(height: 8),
+                Icon(icon, color: AppColors.primary, size: 28.sp),
+                SizedBox(height: 8.w),
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 14,
+                    fontSize: 14.sp,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../models/song.dart';
@@ -60,16 +61,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         // 大标题
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSizes.paddingH,
-              60,
+              60.w,
               AppSizes.paddingH,
-              12,
+              12.w,
             ),
             child: Text(
               '搜索',
               style: TextStyle(
-                fontSize: 34,
+                fontSize: 34.sp,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textPrimary,
               ),
@@ -80,11 +81,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         // 搜索框
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               AppSizes.paddingH,
               0,
               AppSizes.paddingH,
-              12,
+              12.w,
             ),
             child: GlassPanel(
               blur: 12,
@@ -99,7 +100,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   hintStyle: TextStyle(color: AppColors.textTertiary),
                   prefixIcon: Icon(Icons.search_rounded, color: AppColors.textSecondary),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.w),
                 ),
                 onChanged: (value) {
                   ref.read(searchProvider.notifier).searchWithDebounce(value.trim());
@@ -121,27 +122,27 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (engineLoading)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
               child: GlassPanel(
                 blur: 10,
                 borderRadius: 14,
                 tintColor: AppColors.accentBlue.withValues(alpha: 0.1),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.w),
                   child: Row(
                     children: [
                       SizedBox(
-                        width: 20, height: 20,
+                        width: 20.w, height: 20.w,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: AppColors.accentBlue,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
                           '音源引擎初始化中...',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
                         ),
                       ),
                     ],
@@ -153,21 +154,21 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         else if (!engineReady && engineError != null)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
               child: GlassPanel(
                 blur: 10,
                 borderRadius: 14,
                 tintColor: AppColors.error.withValues(alpha: 0.1),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.w),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: AppColors.error, size: 20),
-                      const SizedBox(width: 12),
+                      Icon(Icons.error_outline, color: AppColors.error, size: 20.sp),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
                           '引擎错误: $engineError',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 14.sp),
                         ),
                       ),
                     ],
@@ -179,23 +180,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         else if (sources.isEmpty)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
               child: GlassPanel(
                 blur: 10,
                 borderRadius: 14,
                 tintColor: AppColors.primary.withValues(alpha: 0.1),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.w),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outline, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 12),
+                      Icon(Icons.info_outline, color: AppColors.primary, size: 20.sp),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
                           '请先在设置中导入音源',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontSize: 14.sp,
                           ),
                         ),
                       ),
@@ -208,23 +209,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         else if (sources.every((s) => !s.enabled))
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
               child: GlassPanel(
                 blur: 10,
                 borderRadius: 14,
                 tintColor: AppColors.error.withValues(alpha: 0.1),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16.w),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
-                      const SizedBox(width: 12),
+                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20.sp),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
                           '所有音源已禁用，请在设置中启用至少一个音源',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontSize: 14.sp,
                           ),
                         ),
                       ),
@@ -245,22 +246,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         else if (searchState.error != null)
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8),
+              padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 8.w),
               child: GlassPanel(
                 blur: 10,
                 borderRadius: 14,
                 tintColor: AppColors.error.withValues(alpha: 0.08),
                 child: Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: EdgeInsets.all(14.w),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 18),
-                      const SizedBox(width: 10),
+                      Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 18.sp),
+                      SizedBox(width: 10.w),
                       Expanded(
                         child: Text(
                           searchState.error!,
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.4),
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13.sp, height: 1.4),
                         ),
                       ),
                     ],
@@ -275,11 +276,11 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search_off_rounded, size: 64, color: AppColors.textTertiary),
-                  const SizedBox(height: 16),
+                  Icon(Icons.search_off_rounded, size: 64.sp, color: AppColors.textTertiary),
+                  SizedBox(height: 16.w),
                   Text(
                     '未找到相关结果',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 16),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 16.sp),
                   ),
                 ],
               ),
@@ -303,9 +304,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 final isPlaying = playerState.currentSong?.dedupeKey == song.dedupeKey;
 
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                     horizontal: AppSizes.paddingH,
-                    vertical: 3,
+                    vertical: 3.w,
                   ),
                   child: GlassPanel(
                     blur: 8,
@@ -316,24 +317,24 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 2.w),
                       leading: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           SizedBox(
-                            width: 32,
+                            width: 32.w,
                             child: Text(
                               '${index + 1}',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 14.sp,
                                 color: isPlaying ? AppColors.primary : AppColors.textTertiary,
                               ),
                             ),
                           ),
                           AlbumArt(
                             coverUrl: song.albumCover,
-                            size: 44,
+                            size: 44.w,
                             borderRadius: 12,
                             isPlaying: isPlaying,
                           ),
@@ -348,7 +349,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w500,
                                 color: isPlaying ? AppColors.primary : AppColors.textPrimary,
                               ),
@@ -361,7 +362,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -389,7 +390,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
           ),
 
-        const SliverToBoxAdapter(child: SizedBox(height: 120)),
+        SliverToBoxAdapter(child: SizedBox(height: 120.w)),
       ],
     );
   }
@@ -408,18 +409,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       // 标题行
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSizes.paddingH,
-            20,
+            20.w,
             AppSizes.paddingH,
-            12,
+            12.w,
           ),
           child: Row(
             children: [
-              const Text(
+              Text(
                 '排行榜',
                 style: TextStyle(
-                  fontSize: 22,
+                  fontSize: 22.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                   letterSpacing: -0.3,
@@ -427,9 +428,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               ),
               const Spacer(),
               if (state.isLoading)
-                const SizedBox(
-                  width: 16,
-                  height: 16,
+                SizedBox(
+                  width: 16.w,
+                  height: 16.w,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: AppColors.primary,
@@ -438,18 +439,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               else
                 GestureDetector(
                   onTap: () => ref.read(listsProvider.notifier).refresh(),
-                  child: const Icon(
+                  child: Icon(
                     Icons.refresh_rounded,
                     color: AppColors.textSecondary,
-                    size: 20,
+                    size: 20.sp,
                   ),
                 ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               GestureDetector(
                 onTap: () => context.push('/lists'),
-                child: const Text(
+                child: Text(
                   '查看全部',
-                  style: TextStyle(fontSize: 13, color: AppColors.primary),
+                  style: TextStyle(fontSize: 13.sp, color: AppColors.primary),
                 ),
               ),
             ],
@@ -460,36 +461,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (all.isEmpty)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+            padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
             child: GlassPanel(
               blur: 10,
               borderRadius: 14,
               tintColor: AppColors.surfaceLight,
               child: Padding(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14.w),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.leaderboard_outlined,
                       color: AppColors.textTertiary,
-                      size: 18,
+                      size: 18.sp,
                     ),
-                    const SizedBox(width: 10),
+                    SizedBox(width: 10.w),
                     Expanded(
                       child: Text(
                         state.error ?? '暂无榜单数据，请稍后重试',
-                        style: const TextStyle(
-                          fontSize: 13,
+                        style: TextStyle(
+                          fontSize: 13.sp,
                           color: AppColors.textSecondary,
                         ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () => ref.read(listsProvider.notifier).refresh(),
-                      child: const Text(
+                      child: Text(
                         '重试',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.sp,
                           color: AppColors.primary,
                         ),
                       ),
@@ -502,17 +503,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         )
       else
         SliverPadding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             AppSizes.paddingH,
             0,
             AppSizes.paddingH,
-            24,
+            24.w,
           ),
           sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 16,
+              mainAxisSpacing: 10.w,
+              crossAxisSpacing: 16.w,
               childAspectRatio: 0.8,
             ),
             delegate: SliverChildBuilderDelegate(
@@ -537,15 +538,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final name = sourceKey == null ? '' : kSourceKeyNames[sourceKey] ?? '';
     if (name.isEmpty) return const SizedBox.shrink();
     return Container(
-      margin: const EdgeInsets.only(right: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+      margin: EdgeInsets.only(right: 6.w),
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.w),
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         name,
-        style: TextStyle(fontSize: 10, color: AppColors.primary),
+        style: TextStyle(fontSize: 10.sp, color: AppColors.primary),
       ),
     );
   }
@@ -553,14 +554,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   Widget _buildTypeChips() {
     final type = ref.watch(searchProvider.select((s) => s.searchType));
     return SizedBox(
-      height: 40,
+      height: 40.w,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 4),
+        padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 4.w),
         children: [
           for (final t in SearchType.values)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: EdgeInsets.symmetric(horizontal: 4.w),
               child: GestureDetector(
                 onTap: () => ref.read(searchProvider.notifier).setSearchType(t),
                 child: GlassPanel(
@@ -570,12 +571,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       ? AppColors.primary.withValues(alpha: 0.3)
                       : AppColors.surfaceLight,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.symmetric(horizontal: 16.w),
                     child: Center(
                       child: Text(
                         t.label,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 13.sp,
                           fontWeight: FontWeight.w600,
                           color: type == t
                               ? AppColors.primary
@@ -596,14 +597,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildMediaGrid(List<Song> songs) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+      padding: EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 3,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 12,
+          mainAxisSpacing: 16.w,
+          crossAxisSpacing: 12.w,
           childAspectRatio: 0.68,
         ),
         itemCount: songs.length,
@@ -640,29 +641,29 @@ class _FailedSourcesBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: AppSizes.paddingH,
-        vertical: 4,
+        vertical: 4.w,
       ),
       child: GlassPanel(
         blur: 8,
         borderRadius: 12,
         tintColor: AppColors.error.withValues(alpha: 0.1),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.w),
           child: Row(
             children: [
               Icon(
                 Icons.warning_amber_rounded,
-                size: 16,
+                size: 16.sp,
                 color: AppColors.error,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               Expanded(
                 child: Text(
                   '${failedSources.join('、')} 搜索失败',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     color: AppColors.error,
                   ),
                 ),
@@ -708,13 +709,13 @@ class _MediaCard extends StatelessWidget {
                   : _placeholder(),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.w),
           Text(
             song.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 13,
+            style: TextStyle(
+              fontSize: 13.sp,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
@@ -724,8 +725,8 @@ class _MediaCard extends StatelessWidget {
               subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 12.sp,
                 color: AppColors.textSecondary,
               ),
             ),
@@ -746,11 +747,11 @@ class _MediaCard extends StatelessWidget {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.album_rounded,
           color: AppColors.textTertiary,
-          size: 32,
+          size: 32.sp,
         ),
       ),
     );
@@ -796,19 +797,19 @@ class _TopListCard extends StatelessWidget {
                     // 平台徽标
                     if (sourceName.isNotEmpty)
                       Positioned(
-                        left: 8,
-                        top: 8,
+                        left: 8.w,
+                        top: 8.w,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 6.w, vertical: 2.w),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.55),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             sourceName,
-                            style: const TextStyle(
-                                fontSize: 10, color: Colors.white),
+                            style: TextStyle(
+                                fontSize: 10.sp, color: Colors.white),
                           ),
                         ),
                       ),
@@ -817,15 +818,15 @@ class _TopListCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6.w),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
+            padding: EdgeInsets.symmetric(horizontal: 4.w),
             child: Text(
               info.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
@@ -848,11 +849,11 @@ class _TopListCard extends StatelessWidget {
           ],
         ),
       ),
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.leaderboard_rounded,
           color: AppColors.textSecondary,
-          size: 36,
+          size: 36.sp,
         ),
       ),
     );

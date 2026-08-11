@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../config/constants.dart';
 import '../../../widgets/glass_panel.dart';
@@ -23,7 +24,7 @@ class DownloadsScreen extends ConsumerWidget {
           children: [
             // 顶栏
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, AppSizes.paddingH, 8),
+              padding: EdgeInsets.fromLTRB(12.w, 8.w, AppSizes.paddingH, 8.w),
               child: Row(
                 children: [
                   GlassPanel(
@@ -31,16 +32,16 @@ class DownloadsScreen extends ConsumerWidget {
                     borderRadius: 24,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.textPrimary, size: 18),
+                      icon: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: AppColors.textPrimary, size: 18.sp),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
                   const Spacer(),
-                  const Text(
+                  Text(
                     '下载管理',
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: 17.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
                     ),
@@ -52,8 +53,8 @@ class DownloadsScreen extends ConsumerWidget {
                       borderRadius: 24,
                       tintColor: AppColors.surfaceLight,
                       child: IconButton(
-                        icon: const Icon(Icons.delete_sweep_rounded,
-                            color: AppColors.textSecondary, size: 18),
+                        icon: Icon(Icons.delete_sweep_rounded,
+                            color: AppColors.textSecondary, size: 18.sp),
                         onPressed: () =>
                             ref.read(downloadProvider.notifier).clearCompleted(),
                       ),
@@ -65,13 +66,13 @@ class DownloadsScreen extends ConsumerWidget {
             // 任务列表
             Expanded(
               child: tasks.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.download_for_offline_rounded,
-                              size: 56, color: AppColors.textTertiary),
-                          SizedBox(height: 16),
+                              size: 56.sp, color: AppColors.textTertiary),
+                          SizedBox(height: 16.w),
                           Text(
                             '暂无下载任务\n在歌曲菜单中点击「下载」开始',
                             textAlign: TextAlign.center,
@@ -84,7 +85,7 @@ class DownloadsScreen extends ConsumerWidget {
                       ),
                     )
                   : ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 40),
+                      padding: EdgeInsets.only(bottom: 40.w),
                       itemCount: tasks.length,
                       itemBuilder: (context, index) {
                         final task = tasks[index];
@@ -120,23 +121,23 @@ class _DownloadTaskTile extends ConsumerWidget {
     };
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: AppSizes.paddingH,
-        vertical: 6,
+        vertical: 6.w,
       ),
       child: GlassPanel(
         blur: 10,
         borderRadius: 14,
         tintColor: AppColors.surfaceLight,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(12.w),
           child: Row(
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
-                  width: 44,
-                  height: 44,
+                  width: 44.w,
+                  height: 44.w,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
@@ -161,7 +162,7 @@ class _DownloadTaskTile extends ConsumerWidget {
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -170,41 +171,41 @@ class _DownloadTaskTile extends ConsumerWidget {
                       task.track.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2.w),
                     Text(
                       '${task.track.artist} · ${_qualityLabel(task.quality)}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: 12.sp,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     if (isDownloading || task.status == DownloadStatus.pending) ...[
-                      const SizedBox(height: 6),
+                      SizedBox(height: 6.w),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: LinearProgressIndicator(
                           value: task.progress,
-                          minHeight: 4,
+                          minHeight: 4.w,
                           backgroundColor: AppColors.surfaceDark,
                           color: AppColors.primary,
                         ),
                       ),
                     ] else ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4.w),
                       Text(
                         statusText,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.sp,
                           color: isDone
                               ? AppColors.accentGreen
                               : isFailed
@@ -216,17 +217,17 @@ class _DownloadTaskTile extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8.w),
               if (isDownloading || task.status == DownloadStatus.pending)
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
-                      color: AppColors.textSecondary, size: 20),
+                  icon: Icon(Icons.close_rounded,
+                      color: AppColors.textSecondary, size: 20.sp),
                   onPressed: () => notifier.cancel(task),
                 )
               else
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded,
-                      color: AppColors.textSecondary, size: 20),
+                  icon: Icon(Icons.delete_outline_rounded,
+                      color: AppColors.textSecondary, size: 20.sp),
                   onPressed: () => notifier.remove(task),
                 ),
             ],

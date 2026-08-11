@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../config/constants.dart';
@@ -54,7 +55,7 @@ class AccountCenterScreen extends ConsumerWidget {
           // 返回按钮
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 52, 0, 0),
+              padding: EdgeInsets.fromLTRB(12.w, 52.w, 0, 0),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: GlassPanel(
@@ -62,10 +63,10 @@ class AccountCenterScreen extends ConsumerWidget {
                   borderRadius: 20,
                   tintColor: AppColors.surfaceLight,
                   child: IconButton(
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: AppColors.textPrimary,
-                      size: 18,
+                      size: 18.sp,
                     ),
                     onPressed: () => context.pop(),
                   ),
@@ -77,16 +78,16 @@ class AccountCenterScreen extends ConsumerWidget {
           // 大标题
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSizes.paddingH,
-                12,
+                12.w,
                 AppSizes.paddingH,
-                8,
+                8.w,
               ),
               child: Text(
                 '账号中心',
-                style: const TextStyle(
-                  fontSize: 34,
+                style: TextStyle(
+                  fontSize: 34.sp,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
@@ -97,34 +98,34 @@ class AccountCenterScreen extends ConsumerWidget {
           // 说明卡片
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 AppSizes.paddingH,
                 0,
                 AppSizes.paddingH,
-                16,
+                16.w,
               ),
               child: GlassPanel(
                 blur: 12,
                 borderRadius: 20,
                 tintColor: AppColors.primary.withValues(alpha: 0.08),
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
+                child: Padding(
+                  padding: EdgeInsets.all(16.w),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(
                         Icons.verified_user_outlined,
                         color: AppColors.primary,
-                        size: 20,
+                        size: 20.sp,
                       ),
-                      SizedBox(width: 10),
+                      SizedBox(width: 10.w),
                       Expanded(
                         child: Text(
                           '登录后，内置音源将使用你的账号播放（VIP 歌曲可播），'
                           '并同步各平台的会员状态。登录态仅保存在本机，不会上传。',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 13,
+                            fontSize: 13.sp,
                             height: 1.5,
                           ),
                         ),
@@ -140,9 +141,9 @@ class AccountCenterScreen extends ConsumerWidget {
           for (final platform in kBuiltinPlatforms)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: AppSizes.paddingH,
-                  vertical: 4,
+                  vertical: 4.w,
                 ),
                 child: _PlatformCard(
                   platform: platform,
@@ -193,7 +194,7 @@ class AccountCenterScreen extends ConsumerWidget {
               ),
             ),
 
-          const SliverToBoxAdapter(child: SizedBox(height: 120)),
+          SliverToBoxAdapter(child: SizedBox(height: 120.w)),
         ],
       ),
     );
@@ -227,15 +228,15 @@ class _PlatformCard extends StatelessWidget {
           ? color.withValues(alpha: 0.08)
           : AppColors.surfaceLight,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16.w),
         child: Column(
           children: [
             Row(
               children: [
                 // 平台图标
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 46.w,
+                  height: 46.w,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(14),
                     gradient: LinearGradient(
@@ -250,15 +251,15 @@ class _PlatformCard extends StatelessWidget {
                   child: Center(
                     child: Text(
                       platform.name.substring(0, 1),
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white,
-                        fontSize: 20,
+                        fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: 14.w),
                 // 平台名 + 登录状态
                 Expanded(
                   child: Column(
@@ -266,13 +267,13 @@ class _PlatformCard extends StatelessWidget {
                     children: [
                       Text(
                         platform.name,
-                        style: const TextStyle(
-                          fontSize: 17,
+                        style: TextStyle(
+                          fontSize: 17.sp,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 3),
+                      SizedBox(height: 3.w),
                       _buildStatusText(color),
                     ],
                   ),
@@ -297,12 +298,12 @@ class _PlatformCard extends StatelessWidget {
 
             // VIP 状态（仅登录后显示）
             if (loggedIn) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12.w),
               Divider(
                 height: 1,
                 color: AppColors.textTertiary.withValues(alpha: 0.2),
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12.w),
               _buildVipRow(),
             ],
           ],
@@ -316,7 +317,7 @@ class _PlatformCard extends StatelessWidget {
     if (credential == null || !credential!.isLoggedIn) {
       return Text(
         '未登录',
-        style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+        style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
       );
     }
     final missing = missingLoginKeys(platform.sourceKey, credential!.cookie);
@@ -327,12 +328,12 @@ class _PlatformCard extends StatelessWidget {
     if (missing.isEmpty) {
       return Text(
         '已登录 $dateText',
-        style: TextStyle(fontSize: 13, color: color),
+        style: TextStyle(fontSize: 13.sp, color: color),
       );
     }
     return Text(
       '已登录（登录态不完整：缺 ${missing.join('、')}，请重新登录）',
-      style: TextStyle(fontSize: 12, color: Colors.orange.shade300),
+      style: TextStyle(fontSize: 12.sp, color: Colors.orange.shade300),
     );
   }
 
@@ -346,7 +347,7 @@ class _PlatformCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 18.w, vertical: 8.w),
         decoration: ShapeDecoration(
           color: background,
           shape: StadiumBorder(
@@ -359,7 +360,7 @@ class _PlatformCard extends StatelessWidget {
           label,
           style: TextStyle(
             color: textColor ?? Colors.white,
-            fontSize: 13,
+            fontSize: 13.sp,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -375,17 +376,17 @@ class _PlatformCard extends StatelessWidget {
       return Row(
         children: [
           SizedBox(
-            width: 14,
-            height: 14,
+            width: 14.w,
+            height: 14.w,
             child: CircularProgressIndicator(
               strokeWidth: 2,
               color: AppColors.textTertiary,
             ),
           ),
-          const SizedBox(width: 10),
-          const Text(
+          SizedBox(width: 10.w),
+          Text(
             '正在查询会员状态...',
-            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: 13.sp, color: AppColors.textSecondary),
           ),
         ],
       );
@@ -394,11 +395,11 @@ class _PlatformCard extends StatelessWidget {
     if (status.error != null) {
       return Row(
         children: [
-          Icon(Icons.error_outline, size: 16, color: AppColors.textTertiary),
-          const SizedBox(width: 8),
+          Icon(Icons.error_outline, size: 16.sp, color: AppColors.textTertiary),
+          SizedBox(width: 8.w),
           Text(
             status.error!,
-            style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+            style: TextStyle(fontSize: 13.sp, color: AppColors.textTertiary),
           ),
         ],
       );
@@ -408,7 +409,7 @@ class _PlatformCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.w),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             gradient: LinearGradient(
@@ -424,18 +425,18 @@ class _PlatformCard extends StatelessWidget {
                 status.isVip
                     ? Icons.workspace_premium_rounded
                     : Icons.person_outline,
-                size: 14,
+                size: 14.sp,
                 color: status.isVip
                     ? const Color(0xFF5D4037)
                     : AppColors.textSecondary,
               ),
-              const SizedBox(width: 5),
+              SizedBox(width: 5.w),
               Text(
                 status.label.isNotEmpty
                     ? status.label
                     : (status.isVip ? 'VIP' : '普通用户'),
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 12.sp,
                   fontWeight: FontWeight.w700,
                   color: status.isVip
                       ? const Color(0xFF5D4037)
@@ -446,11 +447,11 @@ class _PlatformCard extends StatelessWidget {
           ),
         ),
         if (status.expireText != null) ...[
-          const SizedBox(width: 10),
+          SizedBox(width: 10.w),
           Text(
             status.expireText!,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: 12.sp,
               color: AppColors.textSecondary,
             ),
           ),
