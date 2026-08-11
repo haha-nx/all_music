@@ -88,7 +88,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             ),
             child: GlassPanel(
               blur: 12,
-              borderRadius: 14,
+              borderRadius: 20,
               tintColor: AppColors.surfaceLight,
               child: TextField(
                 controller: _searchController,
@@ -334,7 +334,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                           AlbumArt(
                             coverUrl: song.albumCover,
                             size: 44,
-                            borderRadius: 8,
+                            borderRadius: 12,
                             isPlaying: isPlaying,
                           ),
                         ],
@@ -646,7 +646,7 @@ class _FailedSourcesBanner extends StatelessWidget {
       ),
       child: GlassPanel(
         blur: 8,
-        borderRadius: 10,
+        borderRadius: 12,
         tintColor: AppColors.error.withValues(alpha: 0.1),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -695,7 +695,7 @@ class _MediaCard extends StatelessWidget {
         children: [
           // 封面（自适应宽高比 1:1）
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             child: AspectRatio(
               aspectRatio: 1,
               child: song.albumCover != null && song.albumCover!.isNotEmpty
@@ -775,12 +775,12 @@ class _TopListCard extends StatelessWidget {
           // 封面（网格全宽 1:1）
           GlassPanel(
             blur: 10,
-            borderRadius: 16,
+            borderRadius: 20,
             tintColor: AppColors.surfaceLight,
             child: AspectRatio(
               aspectRatio: 1,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
                 child: Stack(
                   children: [
                     if (info.picUrl != null && info.picUrl!.isNotEmpty)
@@ -803,7 +803,7 @@ class _TopListCard extends StatelessWidget {
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             sourceName,
