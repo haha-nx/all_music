@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'services/audio_handler.dart';
@@ -68,5 +70,27 @@ void main() async {
   // 注意：数据库初始化不再在 main() 中提前执行。
   // DatabaseHelper 使用懒初始化，首次读写时自动打开，
   // 此时 FlutterEngine 已完全就绪，不会有 Activity 相关异常。
-  runApp(const ProviderScope(child: MusicApp()));
+
+  // ScreenUtil 适配：移动端基准 390×844；桌面端 scale≈1（不放大）
+  final binding = WidgetsBinding.instance;
+  final isDesktop = !kIsWeb &&
+      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+  Size designSize = const Size(390, 844);
+  if (isDesktop) {
+    final view = binding.platformDispatcher.views.first;
+    designSize = Size(
+      view.physicalSize.width / view.devicePixelRatio,
+      view.physicalSize.height / view.devicePixelRatio,
+    );
+  }
+  runApp(
+    ProviderScope(
+      child: ScreenUtilInit(
+        designSize: designSize,
+        minTextAdapt: true,
+        splitScreenMode: true,
+        builder: (context, child) => const MusicApp(),
+      ),
+    ),
+  );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 /// 全局颜色常量
 class AppColors {
@@ -26,19 +27,20 @@ class AppColors {
 }
 
 /// 全局尺寸常量
+/// 全局尺寸常量 — 移动端按 390x844 基准缩放（长宽 .w），圆角不缩放
 class AppSizes {
-  static const double barHeight = 64.0;
-  static const double paddingH = 20.0;
-  static const double paddingV = 16.0;
-  static const double spacing = 8.0;
-  static const double playPillHeight = 56.0;
-  static const double albumArtSize = 48.0;
-  static const double miniAlbumArtSize = 36.0;
-  static const double borderRadius = 12.0;
-  static const double cardBorderRadius = 20.0;
+  static double get barHeight => 64.w;
+  static double get paddingH => 20.w;
+  static double get paddingV => 16.w;
+  static double get spacing => 8.w;
+  static double get playPillHeight => 56.w;
+  static double get albumArtSize => 48.w;
+  static double get miniAlbumArtSize => 36.w;
+  static const double borderRadius = 12.0; // 圆角不缩放
+  static const double cardBorderRadius = 20.0; // 圆角不缩放
 
   // 导航栏
-  static const double navBarHeight = 60.0;
-  static const double navBarRadius = 28.0;
-  static const double navBarBottom = 16.0;
+  static double get navBarHeight => 60.w;
+  static const double navBarRadius = 28.0; // 圆角不缩放
+  static double get navBarBottom => 16.w;
 }
