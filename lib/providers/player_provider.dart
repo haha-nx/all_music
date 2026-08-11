@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 import '../models/song.dart';
 import '../models/lyric.dart';
+import '../music_source/builtin/builtin_search_helpers.dart';
 import '../music_source/core/track_adapter.dart';
 import '../music_source/models/music_track.dart';
 import '../music_source/providers/music_source_provider.dart';
@@ -54,7 +56,6 @@ class PlayerState {
   final MusicRepeatMode repeatMode;
   final List<LyricLine> lyricLines;
   final int currentLyricIndex;
-  final bool showLyrics;
 
   /// 播放错误消息（非 null 时表示播放失败，应显示给用户）
   final String? playbackError;
@@ -76,7 +77,6 @@ class PlayerState {
     this.repeatMode = MusicRepeatMode.off,
     this.lyricLines = const [],
     this.currentLyricIndex = 0,
-    this.showLyrics = false,
     this.playbackError,
     this.speed = 1.0,
     this.sleepTimerRemaining = Duration.zero,
@@ -93,7 +93,6 @@ class PlayerState {
     MusicRepeatMode? repeatMode,
     List<LyricLine>? lyricLines,
     int? currentLyricIndex,
-    bool? showLyrics,
     String? playbackError,
     bool clearError = false,
     double? speed,
@@ -110,7 +109,6 @@ class PlayerState {
       repeatMode: repeatMode ?? this.repeatMode,
       lyricLines: lyricLines ?? this.lyricLines,
       currentLyricIndex: currentLyricIndex ?? this.currentLyricIndex,
-      showLyrics: showLyrics ?? this.showLyrics,
       playbackError: clearError ? null : (playbackError ?? this.playbackError),
       speed: speed ?? this.speed,
       sleepTimerRemaining: sleepTimerRemaining ?? this.sleepTimerRemaining,
@@ -150,12 +148,17 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     });
 
     // 监听播放状态
-    _audioPlayer.playerStateStream.listen((playerState) {
+    _audioPlayer.playerStateStream.listen((playerState) async {
       state = state.copyWith(isPlaying: playerState.playing);
 
-      // 播放完成时自动下一首
+      // 播放完成时自动下一首；单曲循环则重播
       if (playerState.processingState == ProcessingState.completed) {
-        next();
+        if (state.repeatMode == MusicRepeatMode.one) {
+          await _audioPlayer.seek(Duration.zero);
+          await _audioPlayer.play();
+        } else {
+          await next();
+        }
       }
     });
   }
@@ -186,49 +189,135 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     );
   }
 
-  /// 切换歌词显示
-  void toggleLyrics() {
-    state = state.copyWith(showLyrics: !state.showLyrics);
-    // 首次显示歌词时获取
-    if (state.showLyrics && state.lyricLines.isEmpty) {
-      fetchLyrics();
-    }
-  }
-
   /// 从音源获取歌词
-  Future<void> fetchLyrics() async {
+  ///
+  /// 失败自动重试（最多 3 次尝试）：冷启动时账号登录态异步初始化会触发
+  /// sourceListProvider 重建（旧 backend 被 dispose），首播的歌词请求
+  /// 可能正好撞上重建窗口而失败；重试时用最新的音源实例，并在歌曲已
+  /// 切换时放弃，避免歌词错位。
+  Future<void> fetchLyrics({int attempt = 0}) async {
     final song = state.currentSong;
-    if (song == null) return;
+    if (song == null) {
+      debugPrint('[歌词] 跳过：currentSong 为空');
+      return;
+    }
+    debugPrint('[歌词] attempt=$attempt 歌曲=${song.name} id=${song.id} '
+        'sourceId=${song.sourceId} sourceKey=${song.sourceKey}');
 
     try {
       final track = TrackAdapter.fromLegacySong(song);
+      // 每次尝试都重新拿 notifier：sourceListProvider 重建后必须用新实例
       final sourceNotifier = _ref.read(sourceListProvider.notifier);
       final tryOrder = <String>[
         if (song.sourceId != null) song.sourceId!,
         ...sourceNotifier.enabledSources.map((s) => s.id),
       ];
+      debugPrint('[歌词] tryOrder=$tryOrder '
+          'enabled=${sourceNotifier.enabledSources.map((s) => s.id).toList()}');
 
       String? lrc;
       final tried = <String>{};
       for (final sourceId in tryOrder) {
         if (!tried.add(sourceId)) continue;
         final backend = await sourceNotifier.getBackend(sourceId);
-        if (backend == null) continue;
-        final result = await backend.getLyric(track);
+        if (backend == null) {
+          debugPrint('[歌词] $sourceId backend 为 null');
+          continue;
+        }
+
+        // 跨源歌词兜底：源不同时，先在该源按「歌名+歌手」搜索匹配歌曲，
+        // 用匹配到的该源真实 track 再取歌词（直接用原平台 id 查其他源
+        // 必然失败，如网易云数字 id 查 QQ songmid）。本源的歌曲不搜索，
+        // 优先用自己源的标准歌词。
+        var target = track;
+        if (sourceId != song.sourceId && backend.searchKeys.isNotEmpty) {
+          try {
+            final results = await backend.search(
+              '${song.name} ${song.artist}'.trim(),
+              limit: 5,
+              type: SearchType.song,
+            );
+            // 优先歌手匹配，其次取第一个结果
+            MusicTrack? matched;
+            if (song.artist.isNotEmpty) {
+              matched = results.where((t) {
+                final a = t.artist.toLowerCase();
+                final want = song.artist.toLowerCase();
+                return a.contains(want) || want.contains(a);
+              }).firstOrNull;
+            }
+            matched ??= results.firstOrNull;
+            if (matched != null) {
+              target = MusicTrack(
+                id: matched.id,
+                title: matched.title,
+                artist: matched.artist,
+                album: matched.album,
+                coverUrl: matched.coverUrl,
+                durationMs: matched.durationMs,
+                sourceId: sourceId,
+                sourceKey: matched.sourceKey,
+                lyricId: matched.lyricId,
+                rawData: matched.rawData,
+                mediaMid: matched.mediaMid,
+              );
+              debugPrint('[歌词] 跨源 $sourceId 搜索命中 '
+                  '${matched.title}（${matched.id}）');
+            } else {
+              debugPrint('[歌词] 跨源 $sourceId 搜索无匹配');
+            }
+          } catch (e) {
+            debugPrint('[歌词] 跨源 $sourceId 搜索异常: $e');
+          }
+        }
+
+        final result = await backend.getLyric(target);
+        debugPrint('[歌词] $sourceId getLyric 返回 '
+            '${result == null ? 'null' : '${result.length} 字符'}');
         if (result != null && result.isNotEmpty) {
           lrc = result;
+          debugPrint('[歌词] 命中 $sourceId');
           break;
         }
       }
-      if (lrc != null && lrc.isNotEmpty && mounted) {
+
+      if (lrc != null &&
+          lrc.isNotEmpty &&
+          mounted &&
+          state.currentSong?.dedupeKey == song.dedupeKey) {
         final lyric = Lyric.fromLrc(lrc, songId: song.id);
+        debugPrint('[歌词] 解析成功 lines=${lyric.lines.length}');
         state = state.copyWith(
           lyricLines: lyric.lines,
           currentLyricIndex: lyric.currentIndex(state.position),
         );
+        return;
       }
-    } catch (_) {
-      // 歌词获取失败静默处理
+      debugPrint('[歌词] 未取到有效歌词');
+    } catch (e) {
+      debugPrint('[歌词] 异常: $e');
+    }
+
+    // 失败后重试：冷启动时账号登录态初始化会重建音源引擎（backend 被
+    // dispose），首次尝试可能正好撞上重建窗口。先等待引擎就绪再重试，
+    // 最长 ~8 秒，覆盖重建耗时超过固定延迟的场景。
+    if (attempt < 5 && mounted) {
+      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      var ready = false;
+      while (!ready && DateTime.now().isBefore(deadline) && mounted) {
+        try {
+          ready = _ref.read(sourceListProvider.notifier).isEngineReady;
+        } catch (_) {
+          ready = false;
+        }
+        if (!ready) {
+          await Future.delayed(const Duration(milliseconds: 500));
+        }
+      }
+      debugPrint('[歌词] 引擎就绪=$ready，第 ${attempt + 1} 次重试');
+      if (mounted && state.currentSong?.dedupeKey == song.dedupeKey) {
+        fetchLyrics(attempt: attempt + 1);
+      }
     }
   }
 
@@ -293,7 +382,8 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         return false;
       }
 
-      // ── URL 降级链：按优先级尝试多个源获取播放链接 ──
+      // ── 严格同源：只在该歌曲所属平台获取播放链接，绝不跨源降级 ──
+      // （跨平台搜索同名歌会把「周杰伦-」这类翻唱当作原唱播放，已废弃）
       String? url;
       String? lastError;
 
@@ -302,73 +392,28 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
       // 使用设置中的默认音质
       final quality = _ref.read(settingsProvider).defaultQuality;
 
-      // 构建尝试顺序：原始源 → 其他已启用源
-      final tryOrder = <String>[];
-      if (song.sourceId != null) tryOrder.add(song.sourceId!);
-      for (final s in sourceNotifier.enabledSources) {
-        if (!tryOrder.contains(s.id)) tryOrder.add(s.id);
+      // 诊断：确认播放请求走的是哪个源（builtin_* 走内置 API，其他走 lx 脚本）
+      // ignore: avoid_print
+      print('[播放] ${song.name} | sourceId=${song.sourceId} '
+          'sourceKey=${song.sourceKey ?? ''} quality=$quality');
+
+      final bridge = await sourceNotifier.getBackend(song.sourceId!);
+      if (bridge == null) {
+        state = state.copyWith(
+          playbackError: '「${song.name}」所属音源不可用，无法播放',
+        );
+        return false;
       }
-
-      final triedIds = <String>{};
-      for (final sourceId in tryOrder) {
-        if (!triedIds.add(sourceId)) continue;
-
-        try {
-          final bridge = await sourceNotifier.getBackend(sourceId);
-          if (bridge == null) continue;
-
-          // 目标源与歌曲原始源不同（跨源降级）：先在目标源按歌名+歌手
-          // 搜索，拿到该源的真实 track id——直接用原 id（如腾讯 songmid）
-          // 查网易云/酷狗会返回 null，导致「暂无可用播放源」。
-          MusicTrack targetTrack = track;
-          if (sourceId != song.sourceId &&
-              bridge.searchKeys.isNotEmpty) {
-            final results = await bridge.search(
-              '${song.name} ${song.artist}'.trim(),
-              limit: 5,
-              type: SearchType.song,
-            );
-            // 优先匹配歌手，其次取第一个结果
-            MusicTrack? matched;
-            if (song.artist.isNotEmpty) {
-              matched = results.where((t) {
-                final a = t.artist.toLowerCase();
-                final want = song.artist.toLowerCase();
-                return a.contains(want) || want.contains(a);
-              }).firstOrNull;
-            }
-            matched ??= results.firstOrNull;
-            if (matched != null) {
-              targetTrack = MusicTrack(
-                id: matched.id,
-                title: matched.title,
-                artist: matched.artist,
-                album: matched.album,
-                coverUrl: matched.coverUrl,
-                durationMs: matched.durationMs,
-                sourceId: sourceId,
-                sourceKey: matched.sourceKey,
-                rawData: matched.rawData,
-              );
-            }
-          }
-
-          final result =
-              await bridge.getMusicUrl(targetTrack, quality: quality);
-          if (result != null && result.isNotEmpty) {
-            url = result;
-            break;
-          }
-        } catch (e) {
-          lastError = '$sourceId: $e';
-          continue;
-        }
+      try {
+        url = await bridge.getMusicUrl(track, quality: quality);
+      } catch (e) {
+        lastError = '$e';
       }
 
       if (url == null || url.isEmpty) {
         state = state.copyWith(
-          playbackError:
-              '「${song.name}」暂无可用播放源${lastError != null ? '（$lastError）' : ''}',
+          playbackError: '「${song.name}」无法播放：该平台未登录或歌曲无可用播放地址'
+              '${lastError != null ? '（$lastError）' : ''}',
         );
         return false;
       }
@@ -384,21 +429,30 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
         return false;
       }
 
-      await _audioPlayer.setUrl(safeUrl);
+      // 播放时带浏览器 UA：QQ/网易 CDN 拒绝 ExoPlayer 默认 UA（404）
+      await _audioPlayer.setUrl(
+        safeUrl,
+        headers: {'User-Agent': kBrowserUserAgent},
+      );
 
       // 记录到最近播放
       _ref.read(favoritesProvider.notifier).addToRecent(song);
 
-      await _audioPlayer.play();
-      // 更新锁屏信息
-      _updateMediaItem();
-      // 歌曲切换后清空并异步获取歌词
+      // 歌曲切换后清空并异步获取歌词。注意：必须在 play() 之前触发——
+      // just_audio 首次播放时 play() 的 Future 可能因内部 HTTP proxy
+      // 异常（Bad state: Headers already sent）悬挂不返回，若等 play()
+      // 完成再取歌词会导致首播无歌词（重播时才恢复）。
       state = state.copyWith(
         lyricLines: [],
         currentLyricIndex: 0,
         clearError: true,
       );
+      debugPrint('[歌词] 播放成功，触发 fetchLyrics');
       fetchLyrics();
+
+      await _audioPlayer.play();
+      // 更新锁屏信息
+      _updateMediaItem();
       return true;
     } catch (e) {
       print('[Player] 播放异常: $e');
@@ -556,20 +610,25 @@ class PlayerNotifier extends StateNotifier<PlayerState> {
     await _audioPlayer.seek(position);
   }
 
-  /// 切换随机播放
-  void toggleShuffle() {
-    final newShuffle = !state.shuffleMode;
-    if (newShuffle && state.queue.isNotEmpty) {
-      _regenerateShuffleOrder();
+  /// 切换播放模式：顺序 -> 随机 -> 单曲循环 -> 顺序
+  ///
+  /// 模式由 shuffleMode + repeatMode 组合推导：
+  /// - 随机：shuffleMode = true
+  /// - 单曲循环：repeatMode = one
+  /// - 顺序：其余
+  void cyclePlayMode() {
+    if (state.shuffleMode) {
+      // 随机 -> 单曲循环
+      state = state.copyWith(
+          shuffleMode: false, repeatMode: MusicRepeatMode.one);
+    } else if (state.repeatMode == MusicRepeatMode.one) {
+      // 单曲循环 -> 顺序
+      state = state.copyWith(repeatMode: MusicRepeatMode.off);
+    } else {
+      // 顺序 -> 随机
+      if (state.queue.isNotEmpty) _regenerateShuffleOrder();
+      state = state.copyWith(shuffleMode: true);
     }
-    state = state.copyWith(shuffleMode: newShuffle);
-  }
-
-  /// 切换循环模式
-  void toggleRepeat() {
-    final modes = MusicRepeatMode.values;
-    final nextIndex = (state.repeatMode.index + 1) % modes.length;
-    state = state.copyWith(repeatMode: modes[nextIndex]);
   }
 
   /// 设置定时关闭（null 或 Duration.zero 取消）

@@ -38,6 +38,19 @@ abstract class MusicBackend {
   /// 是否支持榜单
   bool get hasList;
 
+  /// 是否支持内置排行榜（官方 API，不依赖第三方音源脚本）
+  bool get hasTopList => false;
+
+  /// 内置排行榜列表（官方 API；脚本源返回空，走 [list]）
+  Future<List<MusicListInfo>> topLists({int limit = 30}) async => const [];
+
+  /// 内置排行榜歌曲列表（官方 API）
+  Future<List<MusicTrack>> topListDetail(
+    MusicListInfo listInfo, {
+    int page = 1,
+    int limit = 50,
+  }) async => const [];
+
   /// 初始化（加载脚本 / 注册路由）
   Future<bool> init();
 

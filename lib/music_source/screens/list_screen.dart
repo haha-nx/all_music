@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../config/constants.dart';
 import '../../../providers/list_provider.dart';
 import '../../../widgets/glass_panel.dart';
+import '../../../widgets/liquid_bottom_bar.dart';
 import '../models/music_list.dart';
 
 /// 排行榜 — 聚合所有启用音源的榜单（lx-music list 动作）
@@ -32,99 +33,135 @@ class _ListScreenState extends ConsumerState<ListScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
           children: [
-            // 顶栏
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, AppSizes.paddingH, 8),
-              child: Row(
-                children: [
-                  GlassPanel(
-                    blur: 8,
-                    borderRadius: 20,
-                    tintColor: AppColors.surfaceLight,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.textPrimary, size: 18),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 顶栏
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    12,
+                    8,
+                    AppSizes.paddingH,
+                    8,
                   ),
-                  const Spacer(),
-                  const Text(
-                    '排行榜',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const Spacer(),
-                  GlassPanel(
-                    blur: 8,
-                    borderRadius: 20,
-                    tintColor: AppColors.surfaceLight,
-                    child: IconButton(
-                      icon: const Icon(Icons.refresh_rounded,
-                          color: AppColors.textPrimary, size: 18),
-                      onPressed: () => ref.read(listsProvider.notifier).refresh(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // 状态区
-            if (state.isLoading)
-              const Expanded(
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              )
-            else if (state.error != null && state.isEmpty)
-              Expanded(
-                child: _ErrorState(
-                  error: state.error!,
-                  onRetry: () => ref.read(listsProvider.notifier).refresh(),
-                ),
-              )
-            else if (state.isEmpty)
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    '暂无榜单数据\n请导入支持 list 动作的标准 LX 音源',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: AppColors.textSecondary, height: 1.6),
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: RefreshIndicator(
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.surfaceDark,
-                  onRefresh: () => ref.read(listsProvider.notifier).refresh(),
-                  child: ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.only(bottom: 40),
+                  child: Row(
                     children: [
-                      for (final section in state.sections) ...[
-                        _buildSectionHeader(section.sourceName, section.lists.length),
-                        _buildListRow(section.lists),
-                      ],
+                      GlassPanel(
+                        blur: 8,
+                        borderRadius: 20,
+                        tintColor: AppColors.surfaceLight,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: AppColors.textPrimary,
+                            size: 18,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        '排行榜',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      GlassPanel(
+                        blur: 8,
+                        borderRadius: 20,
+                        tintColor: AppColors.surfaceLight,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.refresh_rounded,
+                            color: AppColors.textPrimary,
+                            size: 18,
+                          ),
+                          onPressed: () =>
+                              ref.read(listsProvider.notifier).refresh(),
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ),
+
+                // 状态区
+                if (state.isLoading)
+                  const Expanded(
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  )
+                else if (state.error != null && state.isEmpty)
+                  Expanded(
+                    child: _ErrorState(
+                      error: state.error!,
+                      onRetry: () => ref.read(listsProvider.notifier).refresh(),
+                    ),
+                  )
+                else if (state.isEmpty)
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        '暂无榜单数据\n请导入支持 list 动作的标准 LX 音源',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.surfaceDark,
+                      onRefresh: () =>
+                          ref.read(listsProvider.notifier).refresh(),
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(bottom: 120),
+                        children: [
+                          for (final section in state.sections) ...[
+                            _buildSectionHeader(
+                              section.sourceName,
+                            ),
+                            _buildListGrid(section.lists),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // 底部播放胶囊（无歌曲时自动隐藏）
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: PlayerCapsuleBar(),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSectionHeader(String name, int count) {
+  Widget _buildSectionHeader(String name) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 18, AppSizes.paddingH, 12),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingH,
+        14,
+        AppSizes.paddingH,
+        10,
+      ),
       child: Row(
         children: [
           Container(
@@ -144,32 +181,31 @@ class _ListScreenState extends ConsumerState<ListScreen> {
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            '$count 个榜单',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildListRow(List<MusicListInfo> lists) {
-    return SizedBox(
-      height: 168,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH - 8),
-        itemCount: lists.length,
-        itemBuilder: (context, index) {
-          final info = lists[index];
-          return _ListCard(
-            info: info,
-            onTap: () => context.push('/list-detail', extra: info),
-          );
-        },
+  /// 榜单两列网格（上下滑动）
+  Widget _buildListGrid(List<MusicListInfo> lists) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 10,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.8,
       ),
+      itemCount: lists.length,
+      itemBuilder: (context, index) {
+        final info = lists[index];
+        return _ListCard(
+          info: info,
+          onTap: () => context.push('/list-detail', extra: info),
+        );
+      },
     );
   }
 }
@@ -183,63 +219,52 @@ class _ListCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      behavior: HitTestBehavior.opaque, // 整卡任意位置可点
       onTap: onTap,
-      child: Container(
-        width: 130,
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GlassPanel(
-              blur: 10,
-              borderRadius: 14,
-              tintColor: AppColors.surfaceLight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GlassPanel(
+            blur: 10,
+            borderRadius: 16,
+            tintColor: AppColors.surfaceLight,
+            child: AspectRatio(
+              aspectRatio: 1,
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(16),
                 child: info.picUrl != null && info.picUrl!.isNotEmpty
                     ? Image.network(
                         info.picUrl!,
-                        width: 130,
-                        height: 130,
+                        width: double.infinity,
+                        height: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) => _coverPlaceholder(),
                       )
                     : _coverPlaceholder(),
               ),
             ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                info.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              info.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                info.countText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _coverPlaceholder() {
     return Container(
-      width: 130,
-      height: 130,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -251,7 +276,11 @@ class _ListCard extends StatelessWidget {
         ),
       ),
       child: const Center(
-        child: Icon(Icons.leaderboard_rounded, color: AppColors.textSecondary, size: 36),
+        child: Icon(
+          Icons.leaderboard_rounded,
+          color: AppColors.textSecondary,
+          size: 36,
+        ),
       ),
     );
   }
@@ -269,15 +298,21 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.cloud_off_rounded,
-              size: 56, color: AppColors.textTertiary),
+          const Icon(
+            Icons.cloud_off_rounded,
+            size: 56,
+            color: AppColors.textTertiary,
+          ),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
             ),
           ),
           const SizedBox(height: 20),

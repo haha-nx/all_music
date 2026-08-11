@@ -55,6 +55,9 @@ class MusicTrack {
   /// 歌词ID
   final String? lyricId;
 
+  /// 媒体文件ID（QQ 音乐 media_mid，CDN 文件名用；与 songmid 可不同）
+  final String? mediaMid;
+
   /// 原始JS搜索结果（JSON字符串），用于获取播放URL/歌词时传递
   final String? rawData;
 
@@ -69,6 +72,7 @@ class MusicTrack {
     required this.sourceKey,
     this.lyricId,
     this.rawData,
+    this.mediaMid,
   });
 
   /// 生成去重key
@@ -95,6 +99,7 @@ class MusicTrack {
       'sourceKey': sourceKey,
       'lyricId': lyricId,
       'rawData': rawData,
+      'mediaMid': mediaMid,
     };
   }
 
@@ -110,6 +115,7 @@ class MusicTrack {
       sourceKey: map['sourceKey']?.toString() ?? '',
       lyricId: map['lyricId']?.toString(),
       rawData: map['rawData']?.toString(),
+      mediaMid: map['mediaMid']?.toString(),
     );
   }
 

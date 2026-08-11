@@ -67,3 +67,7 @@ linux/flutter/ephemeral/
 .fetch/
 .dart-tool-appdata/
 .workbuddy/
+
+# Agent tooling
+.claude/
+.reasonix/

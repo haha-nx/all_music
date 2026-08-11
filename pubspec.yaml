@@ -1,7 +1,7 @@
 name: all_music
 description: "All Music - 本地音源音乐播放器"
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1
 
 environment:
   sdk: ^3.12.2
@@ -52,9 +52,20 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icon/app_icon.png"  
+  background_color: "#FFFFFF"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
 
 flutter:
   uses-material-design: true
 
   assets:
     - assets/scripts/crypto-js.js
+    # 打包 pubspec.yaml 供设置页读取应用版本号
+    - pubspec.yaml

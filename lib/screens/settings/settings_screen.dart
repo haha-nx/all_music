@@ -5,8 +5,8 @@ import 'account_center_screen.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../providers/settings_provider.dart';
+import '../../utils/app_version.dart';
 import '../../music_source/models/music_track.dart';
-import '../../music_source/providers/music_source_provider.dart';
 
 /// 设置页 — 音源管理 + 关于
 class SettingsScreen extends ConsumerWidget {
@@ -14,8 +14,6 @@ class SettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sources = ref.watch(sourceListProvider);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: CustomScrollView(
@@ -63,9 +61,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ),
 
-        // 音源中心（新版）
+
+        // 音源账号：账号中心（音源中心入口已隐藏）
         SliverToBoxAdapter(
-          child: _buildSectionTitle('音源管理'),
+          child: _buildSectionTitle('账号'),
         ),
         SliverToBoxAdapter(
           child: Padding(
@@ -76,22 +75,6 @@ class SettingsScreen extends ConsumerWidget {
               tintColor: AppColors.surfaceLight,
               child: Column(
                 children: [
-                  _buildMenuItem(
-                    icon: Icons.hub_outlined,
-                    title: '音源中心（新版）',
-                    subtitle: '管理音源、导入脚本、测试引擎',
-                    onTap: () {
-                      context.push('/source-hub');
-                    },
-                  ),
-                  _buildMenuItem(
-                    icon: Icons.science_outlined,
-                    title: '音源测试工具',
-                    subtitle: '验证搜索、播放、歌词功能',
-                    onTap: () {
-                      context.push('/source-test');
-                    },
-                  ),
                   _buildMenuItem(
                     icon: Icons.account_circle_outlined,
                     title: '账号中心',
@@ -110,74 +93,6 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
         ),
-
-        // 已导入的音源列表
-        if (sources.isNotEmpty) ...[
-          SliverToBoxAdapter(
-            child: _buildSectionTitle('已导入音源'),
-          ),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final source = sources[index];
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSizes.paddingH,
-                    vertical: 4,
-                  ),
-                  child: GlassPanel(
-                    blur: 8,
-                    borderRadius: 12,
-                    tintColor: source.enabled
-                        ? AppColors.primary.withValues(alpha: 0.05)
-                        : AppColors.surfaceLight,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-                      leading: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          color: source.enabled
-                              ? AppColors.primary.withValues(alpha: 0.15)
-                              : AppColors.textTertiary.withValues(alpha: 0.1),
-                        ),
-                        child: Icon(
-                          Icons.music_note_rounded,
-                          color: source.enabled ? AppColors.primary : AppColors.textTertiary,
-                          size: 20,
-                        ),
-                      ),
-                      title: Text(
-                        source.name,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: source.enabled ? AppColors.textPrimary : AppColors.textTertiary,
-                        ),
-                      ),
-                      subtitle: Text(
-                        source.description ?? (source.enabled ? '已启用' : '已禁用'),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
-                      ),
-                      trailing: Switch(
-                        value: source.enabled,
-                        onChanged: (_) {
-                          ref.read(sourceListProvider.notifier).toggle(source.id);
-                        },
-                        activeThumbColor: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                );
-              },
-              childCount: sources.length,
-            ),
-          ),
-        ],
       SliverToBoxAdapter(
         child: _buildSectionTitle('播放与下载'),
       ),
@@ -262,10 +177,13 @@ class SettingsScreen extends ConsumerWidget {
             tintColor: AppColors.surfaceLight,
             child: Column(
               children: [
-                _buildMenuItem(
-                  icon: Icons.info_outline_rounded,
-                  title: '版本',
-                  subtitle: '2.0.0',
+                FutureBuilder<String>(
+                  future: AppVersion.get(),
+                  builder: (context, snapshot) => _buildMenuItem(
+                    icon: Icons.info_outline_rounded,
+                    title: '版本',
+                    subtitle: snapshot.data ?? '1.0.0',
+                  ),
                 ),
               ],
             ),

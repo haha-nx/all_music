@@ -87,6 +87,20 @@ class LxBridge implements MusicBackend {
   @override
   bool get hasList => listKeys.isNotEmpty;
 
+  /// 脚本源无官方排行榜（内置源专属），走 lx 标准 list 动作
+  @override
+  bool get hasTopList => false;
+
+  @override
+  Future<List<MusicListInfo>> topLists({int limit = 30}) async => const [];
+
+  @override
+  Future<List<MusicTrack>> topListDetail(
+    MusicListInfo listInfo, {
+    int page = 1,
+    int limit = 50,
+  }) async => const [];
+
   // ── 初始化 ──
 
   /// 初始化引擎，加载并运行源脚本

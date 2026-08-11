@@ -7,9 +7,10 @@ import '../../config/constants.dart';
 import '../../models/playlist.dart';
 import '../../models/song.dart';
 import '../../providers/playlist_provider.dart';
+import '../../providers/account_playlists_provider.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/player_provider.dart';
-import '../../music_source/providers/music_source_provider.dart';
+import '../../music_source/models/music_list.dart';
 import '../../widgets/album_art.dart';
 
 /// 音乐库 — Apple Music 风格
@@ -41,8 +42,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   @override
   Widget build(BuildContext context) {
     final playlists = ref.watch(playlistProvider);
+    final accountPlaylists = ref.watch(accountPlaylistsProvider);
     final favoritesState = ref.watch(favoritesProvider);
-    final sources = ref.watch(sourceListProvider);
     final recentPlayed = favoritesState.recentlyPlayed;
     final favorites = favoritesState.favorites;
 
@@ -124,19 +125,27 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           SliverToBoxAdapter(child: _buildHorizontalSongList(recentPlayed.take(15).toList(), recentPlayed)),
         ],
 
-        // 歌单网格
-        if (playlists.isNotEmpty) ...[
-          SliverToBoxAdapter(child: _buildSectionHeader('我的歌单', count: playlists.length)),
-          SliverToBoxAdapter(child: _buildPlaylistGrid(playlists)),
+        // 歌单区：登录平台「我喜欢的音乐」（按平台分组） + 本地自建歌单
+        if (playlists.isNotEmpty || accountPlaylists.isNotEmpty) ...[
+          SliverToBoxAdapter(child: _buildSectionHeader('我的歌单', count: _playlistTotalCount(playlists, accountPlaylists))),
+          // 各登录平台的「我喜欢的音乐」（未登录平台不会出现在 accountPlaylists）
+          for (final group in accountPlaylists) ...[
+            SliverToBoxAdapter(child: _buildPlaylistGroupHeader(group.sourceName)),
+            SliverToBoxAdapter(
+              child: _buildPlaylistGrid(const [], group.lists,
+                  platformName: group.sourceName),
+            ),
+          ],
+          // 本地自建歌单
+          if (playlists.isNotEmpty) ...[
+            SliverToBoxAdapter(child: _buildPlaylistGroupHeader('本地歌单')),
+            SliverToBoxAdapter(child: _buildPlaylistGrid(playlists, const [])),
+          ],
         ],
 
         // 空状态
-        if (recentPlayed.isEmpty && favorites.isEmpty && playlists.isEmpty)
+        if (recentPlayed.isEmpty && favorites.isEmpty && playlists.isEmpty && accountPlaylists.isEmpty)
           _buildEmptyState(),
-
-        // 浏览快捷入口
-        SliverToBoxAdapter(child: _buildSectionHeader('浏览')),
-        SliverToBoxAdapter(child: _buildBrowseSection(sources.length, favorites.length, playlists.length)),
 
         const SliverToBoxAdapter(child: SizedBox(height: 140)),
       ],
@@ -301,6 +310,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           final isPlaying = currentSong?.dedupeKey == song.dedupeKey;
 
           return GestureDetector(
+            behavior: HitTestBehavior.opaque, // 整卡任意位置可点
             onTap: () => ref.read(playerProvider.notifier).playPlaylist(fullQueue.toList(), startIndex: index),
             child: Container(
               width: 140,
@@ -356,125 +366,220 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  // ──── 歌单网格 ────
-  Widget _buildPlaylistGrid(List<Playlist> playlists) {
+  // ──── 歌单数量（平台歌单 + 本地歌单）────
+  int _playlistTotalCount(
+      List<Playlist> playlists, List<PlatformPlaylistGroup> groups) {
+    return playlists.length +
+        groups.fold(0, (sum, g) => sum + g.lists.length);
+  }
+
+  // ──── 平台分组小标题 ────
+  Widget _buildPlaylistGroupHeader(String name) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: playlists.map((pl) {
-          return SizedBox(
-            width: (MediaQuery.of(context).size.width - AppSizes.paddingH * 2 - 12) / 2,
-            child: GestureDetector(
-              onTap: () => context.push('/playlist/${pl.id}'),
-              onLongPress: () {
-                HapticFeedback.mediumImpact();
-                _showPlaylistActions(pl);
-              },
-              child: GlassPanel(
-                blur: 10,
-                borderRadius: 16,
-                tintColor: AppColors.surfaceLight,
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              AppColors.primary.withValues(alpha: 0.3),
-                              AppColors.primary.withValues(alpha: 0.05),
-                            ],
-                          ),
-                        ),
-                        child: const Center(child: Icon(Icons.queue_music_rounded, color: AppColors.textSecondary, size: 40)),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        pl.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${pl.songCount} 首歌曲',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+      padding:
+          const EdgeInsets.fromLTRB(AppSizes.paddingH, 10, AppSizes.paddingH, 2),
+      child: Row(
+        children: [
+          Container(
+            width: 3,
+            height: 14,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              borderRadius: BorderRadius.circular(2),
             ),
-          );
-        }).toList(),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            name,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // ──── 浏览分类 ────
-  Widget _buildBrowseSection(int sourceCount, int favCount, int plCount) {
-    final items = [
-      _BrowseItem('排行榜', Icons.leaderboard_rounded, AppColors.primary, '/lists', '热榜新歌'),
-      if (favCount > 0) _BrowseItem('收藏', Icons.favorite_rounded, AppColors.primary, '/favorites', '$favCount 首'),
-      if (plCount > 0) _BrowseItem('歌单', Icons.playlist_play_rounded, AppColors.accentPurple, null, '$plCount 个'),
-      _BrowseItem('音源', Icons.dns_rounded, AppColors.accentBlue, '/settings', '$sourceCount 个已启用'),
-      _BrowseItem('搜索', Icons.search_rounded, AppColors.accentGreen, null, '发现好音乐'),
-    ];
-
+  // ──── 歌单网格（平台「我喜欢的音乐」在前，本地自建歌单在后）────
+  Widget _buildPlaylistGrid(
+    List<Playlist> playlists,
+    List<MusicListInfo> accountPlaylists, {
+    String? platformName,
+  }) {
+    final width =
+        (MediaQuery.of(context).size.width - AppSizes.paddingH * 2 - 12) / 2;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: items.map((item) {
-          return SizedBox(
-            width: (MediaQuery.of(context).size.width - AppSizes.paddingH * 2 - 12) / 2,
-            child: GestureDetector(
-              onTap: () {
-                if (item.route != null) {
-                  context.push(item.route!);
-                } else {
-                  // Switch to search tab
-                  // Stay - already in library view
-                }
-              },
-              child: GlassPanel(
-                blur: 10,
-                borderRadius: 16,
-                tintColor: item.color.withValues(alpha: 0.1),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 平台「我喜欢的音乐」卡片
+          for (final info in accountPlaylists)
+            _buildAccountPlaylistCard(info, width,
+                platformName: platformName),
+          // 本地自建歌单卡片
+          for (final pl in playlists) _buildLocalPlaylistCard(pl, width),
+        ],
+      ),
+    );
+  }
+
+  /// 平台「我喜欢的音乐」卡片 → 平台歌单详情（list-detail）
+  Widget _buildAccountPlaylistCard(MusicListInfo info, double width,
+      {String? platformName}) {
+    return SizedBox(
+      width: width,
+      child: GestureDetector(
+        onTap: () => context.push('/list-detail', extra: info),
+        child: GlassPanel(
+          blur: 10,
+          borderRadius: 16,
+          tintColor: AppColors.surfaceLight,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.accentPurple.withValues(alpha: 0.3),
+                        AppColors.accentBlue.withValues(alpha: 0.08),
+                      ],
+                    ),
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
                     children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: item.color.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
+                      if (info.picUrl != null && info.picUrl!.isNotEmpty)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            info.picUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Center(
+                              child: Icon(Icons.favorite_rounded,
+                                  color: AppColors.textSecondary, size: 40),
+                            ),
+                          ),
+                        )
+                      else
+                        const Center(
+                          child: Icon(Icons.favorite_rounded,
+                              color: AppColors.textSecondary, size: 40),
                         ),
-                        child: Icon(item.icon, color: item.color, size: 22),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(item.label, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                      Text(item.subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      // 平台标注徽标
+                      if (platformName != null)
+                        Positioned(
+                          left: 8,
+                          top: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              platformName,
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.white),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 10),
+                Text(
+                  info.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  info.countText,
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
             ),
-          );
-        }).toList(),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 本地自建歌单卡片 → 本地歌单详情（/playlist/:id）
+  Widget _buildLocalPlaylistCard(Playlist pl, double width) {
+    return SizedBox(
+      width: width,
+      child: GestureDetector(
+        onTap: () => context.push('/playlist/${pl.id}'),
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          _showPlaylistActions(pl);
+        },
+        child: GlassPanel(
+          blur: 10,
+          borderRadius: 16,
+          tintColor: AppColors.surfaceLight,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppColors.primary.withValues(alpha: 0.3),
+                        AppColors.primary.withValues(alpha: 0.05),
+                      ],
+                    ),
+                  ),
+                  child: const Center(
+                      child: Icon(Icons.queue_music_rounded,
+                          color: AppColors.textSecondary, size: 40)),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  pl.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${pl.songCount} 首歌曲',
+                  style: const TextStyle(
+                      fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -703,11 +808,4 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   }
 }
 
-class _BrowseItem {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final String? route;
-  final String subtitle;
-  const _BrowseItem(this.label, this.icon, this.color, this.route, this.subtitle);
-}
+

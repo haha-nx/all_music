@@ -44,6 +44,9 @@ class MusicListInfo {
   /// 原始 JS 数据（JSON 字符串），用于 listDetail 调用时传递完整上下文
   final String? rawData;
 
+  /// 是否为官方排行榜（内置源 topLists 产出；true 时详情走 topListDetail）
+  final bool isRank;
+
   const MusicListInfo({
     required this.id,
     required this.title,
@@ -52,6 +55,7 @@ class MusicListInfo {
     required this.sourceId,
     required this.sourceKey,
     this.rawData,
+    this.isRank = false,
   });
 
   /// 格式化数量

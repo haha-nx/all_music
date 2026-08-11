@@ -9,12 +9,16 @@ class AlbumArt extends StatelessWidget {
   final bool isPlaying;
   final double borderRadius;
 
+  /// 播放时的光晕颜色（默认主题色；可传专辑主题色）
+  final Color glowColor;
+
   const AlbumArt({
     super.key,
     this.coverUrl,
     this.size = 48,
     this.isPlaying = false,
     this.borderRadius = 8,
+    this.glowColor = AppColors.primary,
   });
 
   @override
@@ -28,7 +32,7 @@ class AlbumArt extends StatelessWidget {
         boxShadow: isPlaying
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.3),
+                  color: glowColor.withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),

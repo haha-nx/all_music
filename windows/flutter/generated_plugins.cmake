@@ -3,8 +3,8 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  flutter_js
   permission_handler_windows
+  quickjs_engine
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

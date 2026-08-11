@@ -17,7 +17,6 @@ void main() {
       expect(state.duration, Duration.zero);
       expect(state.lyricLines, isEmpty);
       expect(state.currentLyricIndex, 0);
-      expect(state.showLyrics, isFalse);
     });
 
     test('copyWith updates single field', () {

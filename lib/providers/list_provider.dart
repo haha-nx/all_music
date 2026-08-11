@@ -74,7 +74,10 @@ class ListsNotifier extends StateNotifier<ListsState> {
 
       final futures = bridges.map((bridge) async {
         try {
-          final lists = await bridge.list(limit: 30);
+          // 内置源走官方排行榜接口（无需登录/第三方音源），脚本源走 lx list 动作
+          final lists = bridge.hasTopList
+              ? await bridge.topLists(limit: 30)
+              : await bridge.list(limit: 30);
           return (bridge: bridge, lists: lists);
         } catch (e) {
           return (bridge: bridge, lists: <MusicListInfo>[]);

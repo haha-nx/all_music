@@ -7,9 +7,11 @@ import 'platform_search_api.dart';
 
 /// 内置平台搜索后端
 ///
-/// 实现现有 [MusicBackend] 接口，声明 search 能力；
-/// 播放 URL / 歌词默认委托给平台 API（仅网易云实现直连兜底），
-/// 其余返回 null 以触发播放器的跨源降级链。
+/// 实现现有 [MusicBackend] 接口，声明 search 能力与官方排行榜能力
+/// （topLists/topListDetail，无需登录）；「我喜欢的音乐」委托给平台 API，
+/// 由 accountPlaylistsProvider 按登录态过滤展示。
+/// 播放 URL / 歌词委托给平台 API；未登录平台返回空（播放器已改为严格同源，
+/// 取不到本平台地址即明确报错，不再跨源降级）。
 class BuiltinSearchBackend implements MusicBackend {
   final BuiltinPlatform platform;
   final PlatformSearchApi api;
@@ -47,11 +49,16 @@ class BuiltinSearchBackend implements MusicBackend {
   @override
   List<String> get searchKeys => [platform.sourceKey];
 
+  /// 内置平台榜单能力：排行榜页（/lists）直接走官方接口，无需登录
   @override
-  List<String> get listKeys => const [];
+  List<String> get listKeys => [platform.sourceKey];
 
   @override
-  bool get hasList => false;
+  bool get hasList => true;
+
+  /// 支持官方排行榜（网易云 /api/toplist、QQ fcg_myqq_toplist）
+  @override
+  bool get hasTopList => true;
 
   @override
   Future<bool> init() async {
@@ -98,7 +105,7 @@ class BuiltinSearchBackend implements MusicBackend {
     String? sourceKey,
     String? listType,
   }) async {
-    return [];
+    return api.lists(page: page, limit: limit);
   }
 
   @override
@@ -107,8 +114,26 @@ class BuiltinSearchBackend implements MusicBackend {
     int page = 1,
     int limit = 50,
     String? sourceKey,
-  }) async {
-    return [];
+  }) {
+    // 官方排行榜详情与「我喜欢的音乐」详情走不同接口
+    if (listInfo.isRank) {
+      return api.topListDetail(listInfo, page: page, limit: limit);
+    }
+    return api.listDetail(listInfo, page: page, limit: limit);
+  }
+
+  @override
+  Future<List<MusicListInfo>> topLists({int limit = 30}) {
+    return api.topLists(limit: limit);
+  }
+
+  @override
+  Future<List<MusicTrack>> topListDetail(
+    MusicListInfo listInfo, {
+    int page = 1,
+    int limit = 50,
+  }) {
+    return api.topListDetail(listInfo, page: page, limit: limit);
   }
 
   @override

@@ -19,11 +19,12 @@ class AccountCenterNotifier
     } catch (_) {}
   }
 
-  /// 生成 QQ 音乐设备 guid（时间戳 + 随机数，取 10 位）
+  /// 生成 QQ 音乐设备 guid（与 Mineradio 一致：8 位随机数）
+  ///
+  /// 注意：CgiGetVkey 的 vkey 与 guid 绑定，guid 格式必须是 8 位数字，
+  /// 时间戳格式（如 1786340479）会导致服务器生成无效 vkey → CDN 404。
   static String generateGuid() {
-    return (DateTime.now().millisecondsSinceEpoch.toString() +
-            Random().nextInt(1000).toString())
-        .substring(0, 10);
+    return (10000000 + Random().nextInt(90000000)).toString();
   }
 
   /// 登录后写入 cookie（cookie 由 CookieBridge 从原生抓取）

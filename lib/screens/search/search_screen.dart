@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import '../../widgets/glass_panel.dart';
 import '../../config/constants.dart';
 import '../../models/song.dart';
 import '../../providers/player_provider.dart';
 import '../../providers/search_provider.dart';
+import '../../providers/list_provider.dart';
 import '../../music_source/models/music_track.dart';
+import '../../music_source/models/music_list.dart';
 import '../../music_source/builtin/builtin_platforms.dart';
 import '../../music_source/providers/music_source_provider.dart';
 import '../../widgets/album_art.dart';
@@ -26,6 +29,15 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   final _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    // 首次进入预加载排行榜（内置源官方接口，无需搜索）
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(listsProvider.notifier).refresh();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _focusNode.dispose();
@@ -37,6 +49,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final searchState = ref.watch(searchProvider);
     final sources = ref.watch(sourceListProvider);
     final playerState = ref.watch(playerProvider);
+    final listsState = ref.watch(listsProvider);
     final sourceNotifier = ref.read(sourceListProvider.notifier);
     final engineReady = sourceNotifier.isEngineReady;
     final engineLoading = sourceNotifier.readyState == SourceReadyState.loading;
@@ -100,6 +113,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         SliverToBoxAdapter(
           child: _buildTypeChips(),
         ),
+
+        // 排行榜（未搜索时展示；内置源官方接口，无需登录/第三方音源）
+        if (!searchState.hasSearched) ..._buildTopListSlivers(listsState),
 
         // 音源状态提示
         if (engineLoading)
@@ -378,6 +394,142 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  // ──── 排行榜区块（搜索页顶部，未搜索时展示）────
+
+  /// 排行榜：聚合所有启用音源的官方榜单，两列网格上下滑动
+  List<Widget> _buildTopListSlivers(ListsState state) {
+    // 每个来源取前 8 个，多来源交错展示（避免单一来源刷屏）
+    final all = <MusicListInfo>[];
+    for (final s in state.sections) {
+      all.addAll(s.lists.take(8));
+    }
+
+    return [
+      // 标题行
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.paddingH,
+            20,
+            AppSizes.paddingH,
+            12,
+          ),
+          child: Row(
+            children: [
+              const Text(
+                '排行榜',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              const Spacer(),
+              if (state.isLoading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
+                  ),
+                )
+              else
+                GestureDetector(
+                  onTap: () => ref.read(listsProvider.notifier).refresh(),
+                  child: const Icon(
+                    Icons.refresh_rounded,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => context.push('/lists'),
+                child: const Text(
+                  '查看全部',
+                  style: TextStyle(fontSize: 13, color: AppColors.primary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      // 空态 / 两列网格
+      if (all.isEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
+            child: GlassPanel(
+              blur: 10,
+              borderRadius: 14,
+              tintColor: AppColors.surfaceLight,
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.leaderboard_outlined,
+                      color: AppColors.textTertiary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        state.error ?? '暂无榜单数据，请稍后重试',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => ref.read(listsProvider.notifier).refresh(),
+                      child: const Text(
+                        '重试',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        )
+      else
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSizes.paddingH,
+            0,
+            AppSizes.paddingH,
+            24,
+          ),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final info = all[index];
+                return _TopListCard(
+                  info: info,
+                  onTap: () => context.push('/list-detail', extra: info),
+                );
+              },
+              childCount: all.length,
+            ),
+          ),
+        ),
+    ];
+  }
+
   // ──── 搜索类型切换 ────
 
   /// 平台徽标（搜索结果标注音源）
@@ -599,6 +751,108 @@ class _MediaCard extends StatelessWidget {
           Icons.album_rounded,
           color: AppColors.textTertiary,
           size: 32,
+        ),
+      ),
+    );
+  }
+}
+
+/// 搜索页排行榜卡片（两列网格）
+class _TopListCard extends StatelessWidget {
+  final MusicListInfo info;
+  final VoidCallback onTap;
+
+  const _TopListCard({required this.info, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final sourceName = kSourceKeyNames[info.sourceKey] ?? '';
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 封面（网格全宽 1:1）
+          GlassPanel(
+            blur: 10,
+            borderRadius: 16,
+            tintColor: AppColors.surfaceLight,
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Stack(
+                  children: [
+                    if (info.picUrl != null && info.picUrl!.isNotEmpty)
+                      Image.network(
+                        info.picUrl!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _coverPlaceholder(),
+                      )
+                    else
+                      _coverPlaceholder(),
+                    // 平台徽标
+                    if (sourceName.isNotEmpty)
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            sourceName,
+                            style: const TextStyle(
+                                fontSize: 10, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              info.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coverPlaceholder() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.25),
+            AppColors.accentPurple.withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: const Center(
+        child: Icon(
+          Icons.leaderboard_rounded,
+          color: AppColors.textSecondary,
+          size: 36,
         ),
       ),
     );

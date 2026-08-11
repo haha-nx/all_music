@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/constants.dart';
-import '../../../models/song.dart';
 import '../../../providers/player_provider.dart';
 import '../../../widgets/album_art.dart';
 import '../../../widgets/glass_panel.dart';
+import '../../../widgets/liquid_bottom_bar.dart';
 import '../../../widgets/song_context_menu.dart';
 import '../core/track_adapter.dart';
 import '../models/music_list.dart';
 import '../models/music_track.dart';
+import '../core/music_backend.dart';
 import '../providers/music_source_provider.dart';
 
 /// 榜单详情 — 展示榜单歌曲列表（lx-music listDetail 动作）
@@ -23,20 +24,75 @@ class ListDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
-  late Future<List<MusicTrack>> _future;
+  static const _pageSize = 100;
+
+  final _tracks = <MusicTrack>[];
+  final _scrollController = ScrollController();
+  MusicBackend? _backend;
+  bool _initialLoading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  String? _error;
+  int _page = 1;
 
   @override
   void initState() {
     super.initState();
-    _future = _loadDetail();
+    _scrollController.addListener(_onScroll);
+    _init();
   }
 
-  Future<List<MusicTrack>> _loadDetail() async {
-    final backend = await ref
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _init() async {
+    _backend = await ref
         .read(sourceListProvider.notifier)
         .getBackend(widget.listInfo.sourceId);
-    if (backend == null) return [];
-    return backend.listDetail(widget.listInfo, limit: 50);
+    await _loadPage();
+    if (mounted) setState(() => _initialLoading = false);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    if (pos.pixels >= pos.maxScrollExtent - 300) {
+      _loadPage();
+    }
+  }
+
+  /// 分页加载：每页 [_pageSize] 首，滚动到底自动加载下一页
+  Future<void> _loadPage() async {
+    if (_loadingMore || !_hasMore || _backend == null) return;
+    setState(() => _loadingMore = true);
+    try {
+      final page = await _backend!.listDetail(
+        widget.listInfo,
+        page: _page,
+        limit: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        if (page.isEmpty) {
+          _hasMore = false;
+        } else {
+          _tracks.addAll(page);
+          _page++;
+          if (page.length < _pageSize) _hasMore = false;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$e';
+        _hasMore = false;
+      });
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
   }
 
   void _playAll(List<MusicTrack> tracks) {
@@ -56,34 +112,37 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
-        child: FutureBuilder<List<MusicTrack>>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
-            }
-
-            final tracks = snapshot.data ?? [];
-            final songs = TrackAdapter.toLegacySongs(tracks);
-
-            return Column(
+        child: Stack(
+          children: [
+            Column(
               children: [
                 _buildHeader(),
                 Expanded(
-                  child: tracks.isEmpty
+                  child: _initialLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                          ),
+                        )
+                      : _tracks.isEmpty
                       ? const Center(
                           child: Text(
                             '暂无歌曲数据',
                             style: TextStyle(color: AppColors.textSecondary),
                           ),
                         )
-                      : _buildSongList(tracks, songs),
+                      : _buildSongList(_tracks),
                 ),
               ],
-            );
-          },
+            ),
+            // 底部播放胶囊（无歌曲时自动隐藏）
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: PlayerCapsuleBar(),
+            ),
+          ],
         ),
       ),
     );
@@ -99,8 +158,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             borderRadius: 20,
             tintColor: AppColors.surfaceLight,
             child: IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.textPrimary, size: 18),
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.textPrimary,
+                size: 18,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
           ),
@@ -122,21 +184,52 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
     );
   }
 
-  Widget _buildSongList(List<MusicTrack> tracks, List<Song> songs) {
+  Widget _buildSongList(List<MusicTrack> tracks) {
     final currentSong = ref.watch(playerProvider.select((s) => s.currentSong));
+    final songs = TrackAdapter.toLegacySongs(tracks);
 
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 40),
-      itemCount: songs.length + 1,
+      controller: _scrollController,
+      padding: const EdgeInsets.only(bottom: 120),
+      itemCount: songs.length + 2,
       itemBuilder: (context, index) {
         if (index == 0) {
           // 头部大封面 + 播放全部
           return _buildHero(tracks);
         }
+        if (index == songs.length + 1) {
+          // 底部加载状态：加载中 / 到底
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: _loadingMore
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : Text(
+                      _error != null
+                          ? '加载失败：$_error'
+                          : _hasMore
+                          ? '上拉加载更多'
+                          : '已显示全部 ${songs.length} 首',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+            ),
+          );
+        }
         final song = songs[index - 1];
         final isPlaying = currentSong?.dedupeKey == song.dedupeKey;
 
         return GestureDetector(
+          behavior: HitTestBehavior.opaque, // 整行任意位置可点（含行内空隙）
           onTap: () => _playAt(tracks, index - 1),
           onLongPress: () => showSongContextMenu(context, ref, song),
           child: Padding(
@@ -214,7 +307,12 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
 
   Widget _buildHero(List<MusicTrack> tracks) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.paddingH, 16, AppSizes.paddingH, 20),
+      padding: const EdgeInsets.fromLTRB(
+        AppSizes.paddingH,
+        16,
+        AppSizes.paddingH,
+        20,
+      ),
       child: Row(
         children: [
           GlassPanel(
@@ -223,7 +321,9 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
             tintColor: AppColors.surfaceLight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: widget.listInfo.picUrl != null && widget.listInfo.picUrl!.isNotEmpty
+              child:
+                  widget.listInfo.picUrl != null &&
+                      widget.listInfo.picUrl!.isNotEmpty
                   ? Image.network(
                       widget.listInfo.picUrl!,
                       width: 120,
@@ -252,7 +352,10 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                 const SizedBox(height: 6),
                 Text(
                   widget.listInfo.countText,
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
@@ -262,12 +365,18 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
                     borderRadius: 12,
                     tintColor: AppColors.primary.withValues(alpha: 0.25),
                     child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.play_arrow_rounded,
-                              color: Colors.white, size: 20),
+                          Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             '播放全部',
@@ -305,8 +414,11 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         ),
       ),
       child: const Center(
-        child: Icon(Icons.leaderboard_rounded,
-            color: AppColors.textSecondary, size: 36),
+        child: Icon(
+          Icons.leaderboard_rounded,
+          color: AppColors.textSecondary,
+          size: 36,
+        ),
       ),
     );
   }

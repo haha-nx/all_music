@@ -67,7 +67,35 @@ class LiquidBottomBar extends ConsumerWidget {
   }
 }
 
-/// 圆形导航按钮
+/// 独立播放胶囊 — 用于歌单/排行榜等没有底部导航栏的页面
+///
+/// 与 LiquidBottomBar 中间的播放胶囊样式一致；无歌曲时不占位。
+class PlayerCapsuleBar extends ConsumerWidget {
+  const PlayerCapsuleBar({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final data = ref.watch(
+      playerProvider.select(
+        (s) => (song: s.currentSong, isPlaying: s.isPlaying),
+      ),
+    );
+    final song = data.song;
+    if (song == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: _PlayerCapsule(
+        song: song,
+        isPlaying: data.isPlaying,
+        onTogglePlay: () => ref.read(playerProvider.notifier).togglePlay(),
+        onTap: () => context.push('/player'),
+      ),
+    );
+  }
+}
+
+/// 圆形导航按钮（与播放胶囊一致的液态玻璃模糊）
 class _CircleNavButton extends StatelessWidget {
   final IconData icon;
   final bool isSelected;
@@ -81,21 +109,23 @@ class _CircleNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.surfaceLight,
-        ),
-        child: Icon(
-          icon,
-          size: 22,
-          color: isSelected ? AppColors.primary : AppColors.textSecondary,
+    return GlassPanel(
+      blur: 12,
+      borderRadius: 30,
+      tintColor: AppColors.surfaceLight,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          width: 60,
+          height: 60,
+          decoration: const BoxDecoration(shape: BoxShape.circle),
+          child: Icon(
+            icon,
+            size: 22,
+            color: isSelected ? AppColors.primary : AppColors.textSecondary,
+          ),
         ),
       ),
     );

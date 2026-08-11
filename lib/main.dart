@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:audio_session/audio_session.dart';
 import 'package:flutter/material.dart';
@@ -6,9 +8,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app.dart';
 import 'services/audio_handler.dart';
 import 'providers/player_provider.dart';
+import 'music_source/builtin/builtin_search_helpers.dart';
+
+/// 全局 HTTP 客户端覆盖：dart:io HttpClient 默认 UA 改为浏览器 UA
+///
+/// 网易云图片 CDN（p1/p2/p3.music.126.net）会拒绝 dart:io 默认 UA
+/// （`Dart/3.x (dart:io)`，返回 403），导致 CachedNetworkImage/Image.network
+/// 加载网易云封面全部失败（QQ 图床不检查 UA 所以正常）。
+/// 这里把默认 UA 设为浏览器 UA，全局生效且不影响 Dio（Dio 自带 headers）。
+class _BrowserUserAgentHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    client.userAgent = kBrowserUserAgent;
+    return client;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 图片/资源请求默认带浏览器 UA（网易云 CDN 403 修复）
+  HttpOverrides.global = _BrowserUserAgentHttpOverrides();
 
   // 配置音频会话（允许后台播放）—— 容错：失败不影响主流程
   try {

@@ -171,13 +171,13 @@ class SourceManager {
     return backends;
   }
 
-  /// 获取所有已就绪且支持榜单的后端
+  /// 获取所有已就绪且支持榜单（脚本 list 或内置排行榜）的后端
   Future<List<MusicBackend>> getReadyListBridges() async {
     final backends = <MusicBackend>[];
     for (final source in sources) {
       if (!source.enabled) continue;
       final backend = await getBackend(source.id);
-      if (backend != null && backend.ready && backend.hasList) {
+      if (backend != null && backend.ready && (backend.hasList || backend.hasTopList)) {
         backends.add(backend);
       }
     }

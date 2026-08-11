@@ -12,7 +12,7 @@ import '../services/download_manager.dart';
 import '../services/source_manager.dart';
 
 /// 全局 Dio 实例
-final _dioProvider = Provider<Dio>((ref) {
+final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 30),
@@ -48,7 +48,7 @@ enum SourceReadyState { loading, ready, error }
 /// 从数据库加载用户导入的音源并持久化变更。
 final sourceListProvider =
     StateNotifierProvider<SourceListNotifier, List<SourceDefinition>>((ref) {
-  final dio = ref.watch(_dioProvider);
+  final dio = ref.watch(dioProvider);
   // 账号登录态变化时重建 SourceListNotifier（watch）：
   // 登录/登出是低频操作，重建成本（重新加载音源 + 预初始化脚本引擎）
   // 可接受，但保证内置后端的 cookieProvider 闭包拿到最新登录态。
@@ -218,7 +218,7 @@ class SourceListNotifier extends StateNotifier<List<SourceDefinition>> {
 
 final downloadProvider =
     StateNotifierProvider<DownloadNotifier, List<DownloadTask>>((ref) {
-  final dio = ref.watch(_dioProvider);
+  final dio = ref.watch(dioProvider);
   return DownloadNotifier(dio);
 });
 
