@@ -35,7 +35,7 @@ class AppSizes {
   static const double albumArtSize = 48.0;
   static const double miniAlbumArtSize = 36.0;
   static const double borderRadius = 12.0;
-  static const double cardBorderRadius = 16.0;
+  static const double cardBorderRadius = 20.0;
 
   // 导航栏
   static const double navBarHeight = 60.0;

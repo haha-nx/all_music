@@ -26,7 +26,7 @@ class SettingsScreen extends ConsumerWidget {
               alignment: Alignment.centerLeft,
               child: GlassPanel(
                 blur: 8,
-                borderRadius: 20,
+                borderRadius: 24,
                 tintColor: AppColors.surfaceLight,
                 child: IconButton(
                   icon: const Icon(
@@ -238,7 +238,7 @@ class SettingsScreen extends ConsumerWidget {
       backgroundColor: Colors.transparent,
       builder: (_) => GlassPanel(
         blur: 20,
-        borderRadius: 20,
+        borderRadius: 24,
         tintColor: AppColors.surfaceDark,
         child: SafeArea(
           top: false,
@@ -259,6 +259,9 @@ class SettingsScreen extends ConsumerWidget {
               for (final quality in options)
                 ListTile(
                   dense: true,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   title: Text(
                     quality.label,
                     style: TextStyle(

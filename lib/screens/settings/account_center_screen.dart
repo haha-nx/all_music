@@ -105,7 +105,7 @@ class AccountCenterScreen extends ConsumerWidget {
               ),
               child: GlassPanel(
                 blur: 12,
-                borderRadius: 16,
+                borderRadius: 20,
                 tintColor: AppColors.primary.withValues(alpha: 0.08),
                 child: const Padding(
                   padding: EdgeInsets.all(16),
@@ -222,7 +222,7 @@ class _PlatformCard extends StatelessWidget {
 
     return GlassPanel(
       blur: 12,
-      borderRadius: 18,
+      borderRadius: 20,
       tintColor: loggedIn
           ? color.withValues(alpha: 0.08)
           : AppColors.surfaceLight,
@@ -347,12 +347,13 @@ class _PlatformCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-        decoration: BoxDecoration(
+        decoration: ShapeDecoration(
           color: background,
-          borderRadius: BorderRadius.circular(20),
-          border: borderColor != null
-              ? Border.all(color: borderColor, width: 1)
-              : null,
+          shape: StadiumBorder(
+            side: borderColor != null
+                ? BorderSide(color: borderColor, width: 1)
+                : BorderSide.none,
+          ),
         ),
         child: Text(
           label,
@@ -409,7 +410,7 @@ class _PlatformCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(10),
             gradient: LinearGradient(
               colors: status.isVip
                   ? const [Color(0xFFFFD54F), Color(0xFFFFA000)]
