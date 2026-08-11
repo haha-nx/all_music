@@ -149,10 +149,26 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('登录${widget.platformName}'),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        title: Text(
+          '登录${widget.platformName}',
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+        ),
         actions: [
-          TextButton(
-            onPressed: () async {
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+              ),
+              onPressed: () async {
               final cookie = await _grabCookie();
               if (!context.mounted) return;
               if (cookie.isEmpty) {
@@ -178,7 +194,8 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
               _completed = true;
               Navigator.pop(context, cookie);
             },
-            child: const Text('完成（已登录）'),
+              child: const Text('完成（已登录）'),
+            ),
           ),
         ],
       ),
