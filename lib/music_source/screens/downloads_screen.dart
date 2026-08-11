@@ -29,7 +29,7 @@ class DownloadsScreen extends ConsumerWidget {
                 children: [
                   GlassPanel(
                     blur: 8,
-                    borderRadius: 24,
+                    circle: true,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
                       icon: Icon(Icons.arrow_back_ios_new_rounded,
@@ -50,7 +50,7 @@ class DownloadsScreen extends ConsumerWidget {
                   if (tasks.isNotEmpty)
                     GlassPanel(
                       blur: 8,
-                      borderRadius: 24,
+                      circle: true,
                       tintColor: AppColors.surfaceLight,
                       child: IconButton(
                         icon: Icon(Icons.delete_sweep_rounded,

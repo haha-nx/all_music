@@ -112,7 +112,7 @@ class _CircleNavButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPanel(
       blur: 12,
-      borderRadius: 30,
+      circle: true,
       tintColor: AppColors.surfaceLight,
       child: GestureDetector(
         onTap: onTap,
@@ -153,7 +153,7 @@ class _PlayerCapsule extends StatelessWidget {
       onTap: onTap,
       child: GlassPanel(
         blur: 12,
-        borderRadius: 28,
+        stadium: true,
         tintColor: AppColors.surfaceLight,
         child: Container(
           height: 60.w,
@@ -236,7 +236,7 @@ class _EmptyCapsule extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPanel(
       blur: 8,
-      borderRadius: 28,
+      stadium: true,
       tintColor: AppColors.surfaceLight,
       child: SizedBox(
         height: 60.w,

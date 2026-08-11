@@ -51,7 +51,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                     children: [
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 24,
+                        circle: true,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: Icon(
@@ -74,7 +74,7 @@ class _ListScreenState extends ConsumerState<ListScreen> {
                       const Spacer(),
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 24,
+                        circle: true,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: Icon(

@@ -76,7 +76,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 14,
+                        circle: true,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: Icon(Icons.settings_rounded, color: AppColors.textSecondary, size: 20.sp),
@@ -88,7 +88,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                       SizedBox(width: 8.w),
                       GlassPanel(
                         blur: 8,
-                        borderRadius: 14,
+                        circle: true,
                         tintColor: AppColors.surfaceLight,
                         child: IconButton(
                           icon: Icon(Icons.add_rounded, color: AppColors.primary, size: 20.sp),

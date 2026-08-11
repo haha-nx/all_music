@@ -60,7 +60,7 @@ class AccountCenterScreen extends ConsumerWidget {
                 alignment: Alignment.centerLeft,
                 child: GlassPanel(
                   blur: 8,
-                  borderRadius: 20,
+                  circle: true,
                   tintColor: AppColors.surfaceLight,
                   child: IconButton(
                     icon: Icon(

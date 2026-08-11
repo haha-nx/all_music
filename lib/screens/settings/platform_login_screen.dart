@@ -164,10 +164,9 @@ class _PlatformLoginScreenState extends State<PlatformLoginScreen> {
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
                 shape: const StadiumBorder(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: 16.w,
-                  vertical: 8.w,
-                ),
+                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                minimumSize: Size(0, 40.w),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               onPressed: () async {
               final cookie = await _grabCookie();

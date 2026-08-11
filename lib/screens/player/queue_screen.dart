@@ -33,7 +33,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                 children: [
                   GlassPanel(
                     blur: 8,
-                    borderRadius: 24,
+                    circle: true,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
                       icon: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 18.sp),

@@ -156,7 +156,7 @@ class _ListDetailScreenState extends ConsumerState<ListDetailScreen> {
         children: [
           GlassPanel(
             blur: 8,
-            borderRadius: 24,
+            circle: true,
             tintColor: AppColors.surfaceLight,
             child: IconButton(
               icon: Icon(
