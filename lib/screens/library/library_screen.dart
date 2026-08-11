@@ -173,7 +173,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             const SizedBox(height: 28),
             GlassPanel(
               blur: 12,
-              borderRadius: 16,
+              borderRadius: 20,
               tintColor: AppColors.primary.withValues(alpha: 0.25),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
@@ -208,7 +208,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             color: Colors.transparent,
             child: GlassPanel(
               blur: 16,
-              borderRadius: 20,
+              borderRadius: 24,
               tintColor: AppColors.primary.withValues(alpha: 0.12),
               child: Container(
                 height: 150,
@@ -230,7 +230,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: AppColors.primary.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '精选',
@@ -278,14 +278,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               width: size,
               height: size,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(color: AppColors.primary.withValues(alpha: 0.2), blurRadius: 16, offset: const Offset(-4, 4)),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: AlbumArt(coverUrl: displayed[i].albumCover, size: size, borderRadius: 12),
+                borderRadius: BorderRadius.circular(14),
+                child: AlbumArt(coverUrl: displayed[i].albumCover, size: size, borderRadius: 14),
               ),
             ),
           ),
@@ -436,7 +436,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         onTap: () => context.push('/list-detail', extra: info),
         child: GlassPanel(
           blur: 10,
-          borderRadius: 16,
+          borderRadius: 20,
           tintColor: AppColors.surfaceLight,
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -447,7 +447,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -462,7 +462,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                     children: [
                       if (info.picUrl != null && info.picUrl!.isNotEmpty)
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           child: Image.network(
                             info.picUrl!,
                             fit: BoxFit.cover,
@@ -487,7 +487,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                 horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.55),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               platformName,
@@ -535,7 +535,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
         child: GlassPanel(
           blur: 10,
-          borderRadius: 16,
+          borderRadius: 20,
           tintColor: AppColors.surfaceLight,
           child: Padding(
             padding: const EdgeInsets.all(14),
@@ -546,7 +546,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   width: double.infinity,
                   height: 120,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -599,7 +599,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 color: AppColors.surfaceLight,
               ),
               child: Text('$count', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -626,7 +626,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       builder: (_) => Container(
         decoration: const BoxDecoration(
           color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           child: Column(
@@ -637,7 +637,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   children: [
-                    Container(width: 40, height: 40, decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: AppColors.primary.withValues(alpha: 0.15)), child: const Icon(Icons.queue_music_rounded, color: AppColors.primary, size: 20)),
+                    Container(width: 40, height: 40, decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: AppColors.primary.withValues(alpha: 0.15)), child: const Icon(Icons.queue_music_rounded, color: AppColors.primary, size: 20)),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
