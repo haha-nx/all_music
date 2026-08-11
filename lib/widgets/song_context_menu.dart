@@ -30,7 +30,7 @@ class SongContextMenu extends ConsumerWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         child: Column(
@@ -55,7 +55,7 @@ class SongContextMenu extends ConsumerWidget {
                   AlbumArt(
                     coverUrl: song.albumCover,
                     size: 48,
-                    borderRadius: 8,
+                    borderRadius: 12,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -111,7 +111,7 @@ class SongContextMenu extends ConsumerWidget {
                     duration: const Duration(seconds: 1),
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                 );
@@ -224,7 +224,7 @@ class SongContextMenu extends ConsumerWidget {
         ),
         decoration: const BoxDecoration(
           color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: SafeArea(
           child: Column(
@@ -276,7 +276,7 @@ class SongContextMenu extends ConsumerWidget {
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                             color: AppColors.primary.withValues(alpha: 0.15),
                           ),
                           child: Icon(
@@ -318,7 +318,7 @@ class SongContextMenu extends ConsumerWidget {
                                     duration: const Duration(seconds: 1),
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                 );
