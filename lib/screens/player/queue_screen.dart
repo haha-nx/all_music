@@ -32,7 +32,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                 children: [
                   GlassPanel(
                     blur: 8,
-                    borderRadius: 20,
+                    borderRadius: 24,
                     tintColor: AppColors.surfaceLight,
                     child: IconButton(
                       icon: const Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.textPrimary, size: 18),
@@ -56,14 +56,14 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH),
                 child: GlassPanel(
                   blur: 14,
-                  borderRadius: 14,
+                  borderRadius: 16,
                   tintColor: AppColors.primary.withValues(alpha: 0.15),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     leading: AlbumArt(
                       coverUrl: playerState.currentSong!.albumCover,
                       size: 44,
-                      borderRadius: 8,
+                      borderRadius: 12,
                       isPlaying: playerState.isPlaying,
                     ),
                     title: Text(
@@ -150,7 +150,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                               padding: const EdgeInsets.only(right: 24),
                               margin: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16),
                                 color: Colors.red.withValues(alpha: 0.8),
                               ),
                               child: const Icon(Icons.delete_rounded, color: Colors.white, size: 24),
@@ -162,7 +162,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                               padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingH, vertical: 3),
                               child: GlassPanel(
                                 blur: 8,
-                                borderRadius: 14,
+                                borderRadius: 16,
                                 tintColor: isCurrent
                                     ? AppColors.primary.withValues(alpha: 0.1)
                                     : AppColors.surfaceLight,
@@ -178,7 +178,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
                                       AlbumArt(
                                         coverUrl: song.albumCover,
                                         size: 44,
-                                        borderRadius: 8,
+                                        borderRadius: 12,
                                         isPlaying: isCurrent,
                                       ),
                                     ],
